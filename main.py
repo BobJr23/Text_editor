@@ -1,4 +1,5 @@
 import PySimpleGUI as sg
+import os
 
 
 def main():
@@ -7,7 +8,8 @@ def main():
     sg.set_options(font=('Courier New', 15))
 
     layout = [
-        [sg.Menu([["File", ["Open", "Save"]]])],
+        [sg.Menu([["File", ["Open", "Save", "Save As", "Close file", "Exit"]]])],
+        [],
         [sg.Multiline("Choose a file to begin", key="text", expand_x=True, expand_y=True)],
     ]
 
@@ -16,16 +18,37 @@ def main():
     while True:
         event, values = window.read()
         print(event, values)
-        if event == sg.WIN_CLOSED:
-            break
-        elif event == "Open":
-            filename = sg.popup_get_file("Select a file")
-            with open(filename) as f:
-                text = f.read()
-                window["text"].update(text)
-        elif event == "Save":
-            with open(filename, "w") as f:
-                f.write(values["text"])
+        match event:
+            case sg.WIN_CLOSED:
+                break
+
+            case "Open":
+                filename = sg.popup_get_file("Select a file", no_window=True)
+                with open(filename) as f:
+                    text = f.read()
+                    window["text"].update(text)
+                    f.close()
+
+            case "Save":
+                with open(filename, "w") as f:
+                    f.write(values["text"])
+                    f.close()
+
+            case "Save As":
+                with open(filename, "w") as f:
+                    f.write(values["text"])
+                    f.close()
+                os.rename(filename, sg.popup_get_file(
+                    "Select a file", save_as=True, no_window=True,
+                    )
+                )
+
+            case "Close file":
+                filename = None
+                window["text"].update("")
+
+            case "Exit":
+                break
 
     window.close()
 
