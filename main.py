@@ -39,13 +39,25 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
-def save_settings():
+def load_from_file(filename, window):
+    with open(filename) as f:
+        text = f.read()
+        window["text"].update(text)
+        f.close()
+    current_files = window["listbox"].get_list_values()
+
+    current_files.append(filename)
+    window["listbox"].update(current_files)
+
+
+def save_settings(open_files):
     with open("settings.json", "w") as f:
         # implement files opened
         f.write(
             json.dumps(
                 {
                     "theme": sg.theme(),
+                    "open_files": open_files,
                 }
             )
         )
@@ -73,11 +85,21 @@ def main():
                 [
                     [
                         "File",
-                        ["Open", "Save", "Save As", "Close file", "---", "Exit editor"],
+                        [
+                            "Open",
+                            "Save",
+                            "Save As",
+                            "Close file",
+                            "---",
+                            "New",
+                            "---",
+                            "Exit editor",
+                        ],
                     ],
                     ["Theme", ["Preview themes", "Choose theme"]],
+                    ["Edit", ["Find"]],
                 ]
-            )
+            ),
         ],
         [
             sg.Listbox(
@@ -88,7 +110,9 @@ def main():
                 expand_x=True,
                 sbar_width=3,
                 sbar_arrow_width=3,
-            )
+            ),
+            sg.Input(visible=False, enable_events=True, key="find_input"),
+            sg.Text("0", visible=False, key="counter"),
         ],
         [
             sg.Multiline(
@@ -99,6 +123,12 @@ def main():
 
     window = sg.Window("BobJr editor", layout, resizable=True, finalize=True)
     window.maximize()
+    window.bind("<Control-s>", "Save_bind")
+    window.bind("<Control-o>", "Open_bind")
+    window.bind("<Control-w>", "Close_bind")
+    window.bind("<Control-f>", "Find")
+    for x in settings["open_files"]:
+        load_from_file(x, window)
     while True:
         event, values = window.read()
         print(event, values)
@@ -106,19 +136,12 @@ def main():
             case sg.WIN_CLOSED:
                 break
 
-            case "Open":
+            case "Open" | "Open_bind":
                 filename = sg.popup_get_file("Select a file", no_window=True)
                 if filename is not None:
-                    with open(filename) as f:
-                        text = f.read()
-                        window["text"].update(text)
-                        f.close()
-                    current_files = window["listbox"].get_list_values()
+                    load_from_file(filename, window)
 
-                    current_files.append(filename)
-                    window["listbox"].update(current_files)
-
-            case "Save":
+            case "Save" | "Save_bind":
                 with open(filename, "w") as f:
                     f.write(values["text"])
                     f.close()
@@ -136,7 +159,7 @@ def main():
                     ),
                 )
 
-            case "Close file":
+            case "Close file" | "Close_bind":
 
                 current_files = window["listbox"].get_list_values()
 
@@ -156,6 +179,18 @@ def main():
 
             case "Preview themes":
                 sg.theme_previewer(scrollable=True, columns=6)
+
+            case "Find":
+                window["find_input"].update(visible=True)
+                window["counter"].update(visible=True)
+                window["find_input"].set_focus()
+
+            case "find_input":
+                text = values["text"]
+                search = values["find_input"]
+                count = text.count(search)
+                window["counter"].update("1/" + str(count))
+                window["text"].update(text.replace(search, f"[{search}]"))
 
             case "Choose theme":
                 window.disable()
@@ -219,8 +254,8 @@ def main():
             case "Exit editor":
                 break
 
+    save_settings(window["listbox"].get_list_values())
     window.close()
-    save_settings()
 
 
 if __name__ == "__main__":
