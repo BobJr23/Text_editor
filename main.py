@@ -1,10 +1,46 @@
 import PySimpleGUI as sg
 import os
+import tkinter
+
+
+# modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
+def update_theme(window: sg.Window, selected_theme):
+    current_them = sg.LOOK_AND_FEEL_TABLE[selected_theme]
+
+    try:
+        window_bkg = current_them.get("BACKGROUND")
+        window.TKroot.config(background=window_bkg)
+    except Exception as e:
+        print(e)
+
+        # iterate over all widgets:
+    print(current_them)
+    for v, element in window.AllKeysDict.items():
+
+        try:
+
+            if element.Type == "button":
+                color = current_them.get("BUTTON")
+                background = current_them.get("SCROLL")
+                element.Widget.config(foreground=color[0], background=background)
+            elif element.Type in ["listbox", "multiline"]:
+                color = current_them.get("INPUT")
+                element.Widget.config(background=color)
+
+            else:
+                color = current_them.get("BACKGROUND")
+                element.Widget.config(background=color)
+
+            element.update()
+
+        except Exception as e:
+            print(e)
 
 
 def main():
     filename = None
-    sg.theme("Darkblue")
+    sg.theme("DarkBlue3")
+
     sg.set_options(font=("Courier New", 15))
 
     layout = [
@@ -37,7 +73,7 @@ def main():
         ],
     ]
 
-    window = sg.Window("BobJr editor", layout, resizable=True).Finalize()
+    window = sg.Window("BobJr editor", layout, resizable=True, finalize=True)
     window.maximize()
     while True:
         event, values = window.read()
@@ -103,21 +139,37 @@ def main():
                 window2 = sg.Window(
                     "Choose a theme",
                     [
-                        [sg.Input(key="theme-input", enable_events=True, size=(20, 1))],
+                        [
+                            sg.Input(
+                                focus=True,
+                                tooltip="Search for a theme",
+                                key="theme-input",
+                                enable_events=True,
+                                size=(20, 1),
+                            )
+                        ],
                         [
                             sg.Listbox(
                                 values=sg.theme_list(),
                                 key="theme",
+                                size=(20, 20),
                                 expand_y=True,
-                                expand_x=True,
                                 enable_events=True,
-                            )
+                            ),
+                            sg.Text("Example Text", size=(20, 1)),
+                            sg.Button("Example Button, size=(20, 1)"),
+                            sg.Input(default_text="Example Input", size=(20, 1)),
+                            sg.Multiline("Example Multiline", size=(20, 20)),
                         ],
                         [sg.Button("Submit")],
                     ],
                     resizable=True,
-                ).Finalize()
+                    finalize=True,
+                )
                 window2.maximize()
+
+                current_them = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
+                window_bkg = current_them.get("BACKGROUND")
                 while True:
                     event2, values2 = window2.read()
                     print(event2, values2)
@@ -125,7 +177,7 @@ def main():
                         break
                     if event2 == "theme":
                         theme = values2["theme"][0]
-                        sg.theme(theme)
+                        update_theme(window2, theme)
 
                     if event2 == "theme-input":
                         window2["theme"].update(
@@ -137,6 +189,7 @@ def main():
                         )
 
                 window2.close()
+
                 window.enable()
 
             case "Exit editor":
