@@ -6,6 +6,7 @@ import re
 from highlighter import do_highlighting
 import os
 from run_file import run
+import threading
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
@@ -144,6 +145,15 @@ def main():
                 "Choose a file to begin", key="text", expand_x=True, expand_y=True
             )
         ],
+        [
+            sg.Multiline(
+                visible=False,
+                key="terminal",
+                expand_x=True,
+                expand_y=True,
+                autoscroll=True,
+            )
+        ],
     ]
 
     window = sg.Window("BobJr editor", layout, resizable=True, finalize=True)
@@ -216,7 +226,7 @@ def main():
                 window["find_input"].set_focus()
 
             case "find_input":
-
+                first_occurence = None
                 text = values["text"]
                 search = values["find_input"].lower()
                 count = text.lower().count(search)
@@ -228,6 +238,8 @@ def main():
                     flags=re.IGNORECASE,
                 )
                 for x in text2:
+                    if first_occurence is None:
+                        first_occurence = x.count("\n")
                     if x.lower() == search:
                         window["text"].print(
                             x,
@@ -239,6 +251,8 @@ def main():
                         window["text"].print(x, end="")
 
                 window["counter"].update("1/" + str(count))
+
+                # window["text"].update(current_scroll_position=True)
 
             case "close_find":
                 window["find_input"].update(visible=False)
@@ -252,17 +266,31 @@ def main():
                 if interpreter is not None:
                     settings["interpreter"] = interpreter
 
-            case "Run":
+            case "Run file":
 
                 filename = values["listbox"][0]
-                if settings["interpreter"] is None:
+                if settings["interpreter"] in [None, ""]:
                     sg.popup("Please select an interpreter")
                     continue
                 if filename is None or not filename.endswith(".py"):
                     sg.popup("Please select a python file to run")
                     continue
-                t = run(filename, interpreter=settings["interpreter"])
-                sg.popup(t.stdout)
+                window["terminal"].update(visible=True)
+                window["terminal"].update(f"{settings["interpreter"]} {filename}\n")
+                threading.Thread(
+                    target=run,
+                    args=(
+                        filename,
+                        os.path.dirname(filename),
+                        settings["interpreter"],
+                        window["terminal"],
+                    ),
+                    daemon=True,
+                ).start()
+
+                # window["terminal"].update(
+                #     f"{settings["interpreter"]} {filename}\n" + t.stdout
+                # )
 
             case "Choose theme":
                 window.disable()
