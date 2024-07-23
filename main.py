@@ -3,6 +3,7 @@ import os
 import tkinter
 import json
 import re
+from highlighter import do_highlighting
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
@@ -42,16 +43,17 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
-def load_from_file(filename, window: sg.Window, find=""):
-    with open(filename) as f:
-        text = f.read()
-        window["text"].update(text)
-
-        f.close()
-
-    current_files = window["listbox"].get_list_values()
-    current_files.append(filename)
-    window["listbox"].update(current_files)
+def load_from_file(filename, window: sg.Window, add_to_list=True, update=True):
+    if update:
+        with open(filename) as f:
+            text = f.read()
+            # window["text"].update(text)
+            do_highlighting(window, text)
+            f.close()
+    if add_to_list:
+        current_files = window["listbox"].get_list_values()
+        current_files.append(filename)
+        window["listbox"].update(current_files)
 
 
 def save_settings(open_files):
@@ -140,7 +142,7 @@ def main():
     window.bind("<Control-w>", "Close_bind")
     window.bind("<Control-f>", "Find")
     for x in settings["open_files"]:
-        load_from_file(x, window)
+        load_from_file(x, window, update=False)
     while True:
         event, values = window.read()
 
@@ -184,10 +186,11 @@ def main():
                     filename = values["listbox"][0]
                 except IndexError:
                     continue
-                with open(filename) as f:
-                    text = f.read()
-                    window["text"].update(text)
-                    f.close()
+                load_from_file(filename, window, add_to_list=False)
+                # with open(filename) as f:
+                #     text = f.read()
+                #     window["text"].update(text)
+                #     f.close()
 
             case "Preview themes":
                 sg.theme_previewer(scrollable=True, columns=6)
@@ -204,21 +207,23 @@ def main():
                 search = values["find_input"].lower()
                 count = text.lower().count(search)
                 window["text"].update("")
-                for i, x in enumerate(text.split("\n")):
-                    if search != "" and search in x.lower():
-                        words = x.split(search)
-                        for word in words[:-1]:
-                            window["text"].print(word, end="")
-                            window["text"].print(
-                                search,
-                                background_color="orange",
-                                text_color="white",
-                                end="",
-                            )
-                        window["text"].print(words[-1])
 
+                text2 = re.split(
+                    f"({search})",
+                    text,
+                    flags=re.IGNORECASE,
+                )
+                for x in text2:
+                    if x.lower() == search:
+                        window["text"].print(
+                            x,
+                            background_color="orange",
+                            text_color="white",
+                            end="",
+                        )
                     else:
-                        window["text"].print(x)
+                        window["text"].print(x, end="")
+
                 window["counter"].update("1/" + str(count))
 
             case "close_find":
