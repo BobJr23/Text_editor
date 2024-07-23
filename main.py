@@ -2,10 +2,13 @@ import PySimpleGUI as sg
 import os
 import tkinter
 import json
+import re
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
+    if selected_theme is None:
+        return
     current_them = sg.LOOK_AND_FEEL_TABLE[selected_theme]
 
     try:
@@ -39,13 +42,14 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
-def load_from_file(filename, window):
+def load_from_file(filename, window: sg.Window, find=""):
     with open(filename) as f:
         text = f.read()
         window["text"].update(text)
-        f.close()
-    current_files = window["listbox"].get_list_values()
 
+        f.close()
+
+    current_files = window["listbox"].get_list_values()
     current_files.append(filename)
     window["listbox"].update(current_files)
 
@@ -77,7 +81,7 @@ def main():
     sg.theme(settings["theme"])
 
     # Upload ttf file to C:\Windows\Fonts folder
-    sg.set_options(font=("Jetbrains Mono", 12))
+    sg.set_options(font=(FONT, 12))
 
     layout = [
         [
@@ -112,6 +116,14 @@ def main():
                 sbar_arrow_width=3,
             ),
             sg.Input(visible=False, enable_events=True, key="find_input"),
+            sg.Button(
+                button_text="x",
+                visible=False,
+                key="close_find",
+                font=(FONT, 6),
+                size=(2, 2),
+                pad=(0, 0),
+            ),
             sg.Text("0", visible=False, key="counter"),
         ],
         [
@@ -131,7 +143,7 @@ def main():
         load_from_file(x, window)
     while True:
         event, values = window.read()
-        print(event, values)
+
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -182,16 +194,38 @@ def main():
 
             case "Find":
                 window["find_input"].update(visible=True)
+                window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
 
             case "find_input":
-                text = values["text"]
-                search = values["find_input"]
-                count = text.count(search)
-                window["counter"].update("1/" + str(count))
-                window["text"].update(text.replace(search, f"[{search}]"))
 
+                text = values["text"]
+                search = values["find_input"].lower()
+                count = text.lower().count(search)
+                window["text"].update("")
+                for i, x in enumerate(text.split("\n")):
+                    if search != "" and search in x.lower():
+                        words = x.split(search)
+                        for word in words[:-1]:
+                            window["text"].print(word, end="")
+                            window["text"].print(
+                                search,
+                                background_color="orange",
+                                text_color="white",
+                                end="",
+                            )
+                        window["text"].print(words[-1])
+
+                    else:
+                        window["text"].print(x)
+                window["counter"].update("1/" + str(count))
+
+            case "close_find":
+                window["find_input"].update(visible=False)
+                window["counter"].update(visible=False)
+                window["close_find"].update(visible=False)
+                window["text"].update(values["text"])
             case "Choose theme":
                 window.disable()
                 theme = None
@@ -231,7 +265,7 @@ def main():
                 window_bkg = current_them.get("BACKGROUND")
                 while True:
                     event2, values2 = window2.read()
-                    print(event2, values2)
+
                     if event2 in (sg.WIN_CLOSED, "Submit"):
                         break
                     if event2 == "theme":
@@ -254,9 +288,11 @@ def main():
             case "Exit editor":
                 break
 
+    # save = sg.popup_yes_no("Do you want to save your changes?", title="Save changes")
     save_settings(window["listbox"].get_list_values())
     window.close()
 
 
 if __name__ == "__main__":
+    FONT = "Jetbrains Mono"
     main()
