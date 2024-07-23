@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 import os
 import tkinter
+import json
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
@@ -14,19 +15,20 @@ def update_theme(window: sg.Window, selected_theme):
         print(e)
 
         # iterate over all widgets:
-    print(current_them)
+
     for v, element in window.AllKeysDict.items():
 
         try:
 
             if element.Type == "button":
                 color = current_them.get("BUTTON")
-                background = current_them.get("SCROLL")
-                element.Widget.config(foreground=color[0], background=background)
-            elif element.Type in ["listbox", "multiline"]:
-                color = current_them.get("INPUT")
-                element.Widget.config(background=color)
 
+                element.Widget.config(foreground=color[0], background=color[1])
+            elif element.Type in ["listbox", "multiline", "input"]:
+                color = current_them.get("INPUT")
+                element.Widget.config(
+                    background=color, foreground=current_them.get("TEXT_INPUT")
+                )
             else:
                 color = current_them.get("BACKGROUND")
                 element.Widget.config(background=color)
@@ -37,11 +39,33 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
+def save_settings():
+    with open("settings.json", "w") as f:
+        # implement files opened
+        f.write(
+            json.dumps(
+                {
+                    "theme": sg.theme(),
+                }
+            )
+        )
+        f.close()
+
+
+def load_settings():
+    with open("settings.json") as f:
+        settings = json.load(f)
+        f.close()
+    return settings
+
+
 def main():
     filename = None
-    sg.theme("DarkBlue3")
+    settings = load_settings()
+    sg.theme(settings["theme"])
 
-    sg.set_options(font=("Courier New", 15))
+    # Upload ttf file to C:\Windows\Fonts folder
+    sg.set_options(font=("Jetbrains Mono", 12))
 
     layout = [
         [
@@ -191,11 +215,12 @@ def main():
                 window2.close()
 
                 window.enable()
-
+                update_theme(window, theme)
             case "Exit editor":
                 break
 
     window.close()
+    save_settings()
 
 
 if __name__ == "__main__":
