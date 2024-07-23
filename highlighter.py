@@ -1,14 +1,20 @@
 import re
 import PySimpleGUI as sg
 
+# I Used ChatGPT for creating these regex patterns
 patterns = {
+    "keyword": r"\b(import|from|as|if|else|elif|for|while|def|return|in|and|or|not|is|class|try|except|finally|with|lambda|yield|assert|break|continue|del|global|nonlocal|pass|raise|True|False|None)\b",
     "string": r"(\".*?\"|\'.*?\')",
     "comment": r"(#.*?$)",
+    "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
 }
 
 styles = {
-    "string": {"text_color": "green"},
-    "comment": {"text_color": "grey"},
+    # One dark Pro theme (best theme) obtained from screenshotting :D
+    "keyword": {"text_color": "#c678dd"},
+    "string": {"text_color": "#98c379"},
+    "comment": {"text_color": "#5c6370"},
+    "function": {"text_color": "#61afef"},
 }
 
 
@@ -39,13 +45,14 @@ def highlight_code(text):
     return segments
 
 
-def do_highlighting(window, input_text):
+def do_highlighting(window: sg.Window, input_text):
 
     highlighted_segments = highlight_code(input_text)
     window["text"].update("")
     for segment in highlighted_segments:
 
         pattern_name, text_segment = segment
+
         if pattern_name == "normal":
             window["text"].print(text_segment, text_color="darkgrey", end="")
         else:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# TAKEN FROM THE PySimpleGUI DOCS
 import PySimpleGUI as sg
 
 """

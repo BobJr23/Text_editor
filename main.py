@@ -4,6 +4,8 @@ import tkinter
 import json
 import re
 from highlighter import do_highlighting
+import os
+from run_file import run
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
@@ -43,12 +45,16 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
-def load_from_file(filename, window: sg.Window, add_to_list=True, update=True):
+def load_from_file(
+    filename, window: sg.Window, add_to_list=True, update=True, highlight=True
+):
     if update:
         with open(filename) as f:
             text = f.read()
-            # window["text"].update(text)
-            do_highlighting(window, text)
+            if highlight:
+                do_highlighting(window, text)
+            else:
+                window["text"].update(text)
             f.close()
     if add_to_list:
         current_files = window["listbox"].get_list_values()
@@ -56,7 +62,7 @@ def load_from_file(filename, window: sg.Window, add_to_list=True, update=True):
         window["listbox"].update(current_files)
 
 
-def save_settings(open_files):
+def save_settings(open_files, settings):
     with open("settings.json", "w") as f:
         # implement files opened
         f.write(
@@ -64,6 +70,7 @@ def save_settings(open_files):
                 {
                     "theme": sg.theme(),
                     "open_files": open_files,
+                    "interpreter": settings["interpreter"],
                 }
             )
         )
@@ -80,7 +87,10 @@ def load_settings():
 def main():
     filename = None
     settings = load_settings()
+
+    # CREATING CUSTOM THEME
     sg.theme(settings["theme"])
+    sg.theme_input_background_color("#282c34")
 
     # Upload ttf file to C:\Windows\Fonts folder
     sg.set_options(font=(FONT, 12))
@@ -104,6 +114,7 @@ def main():
                     ],
                     ["Theme", ["Preview themes", "Choose theme"]],
                     ["Edit", ["Find"]],
+                    ["Run", ["Select interpreter", "Run file"]],
                 ]
             ),
         ],
@@ -141,8 +152,11 @@ def main():
     window.bind("<Control-o>", "Open_bind")
     window.bind("<Control-w>", "Close_bind")
     window.bind("<Control-f>", "Find")
-    for x in settings["open_files"]:
-        load_from_file(x, window, update=False)
+    try:
+        for x in settings["open_files"]:
+            load_from_file(x, window, update=False, highlight=False)
+    except KeyError:
+        pass
     while True:
         event, values = window.read()
 
@@ -153,7 +167,7 @@ def main():
             case "Open" | "Open_bind":
                 filename = sg.popup_get_file("Select a file", no_window=True)
                 if filename is not None:
-                    load_from_file(filename, window)
+                    load_from_file(filename, window, highlight=False)
 
             case "Save" | "Save_bind":
                 with open(filename, "w") as f:
@@ -186,7 +200,7 @@ def main():
                     filename = values["listbox"][0]
                 except IndexError:
                     continue
-                load_from_file(filename, window, add_to_list=False)
+                load_from_file(filename, window, add_to_list=False, highlight=False)
                 # with open(filename) as f:
                 #     text = f.read()
                 #     window["text"].update(text)
@@ -231,6 +245,25 @@ def main():
                 window["counter"].update(visible=False)
                 window["close_find"].update(visible=False)
                 window["text"].update(values["text"])
+
+            case "Select interpreter":
+
+                interpreter = sg.popup_get_file("Select an interpreter", no_window=True)
+                if interpreter is not None:
+                    settings["interpreter"] = interpreter
+
+            case "Run":
+
+                filename = values["listbox"][0]
+                if settings["interpreter"] is None:
+                    sg.popup("Please select an interpreter")
+                    continue
+                if filename is None or not filename.endswith(".py"):
+                    sg.popup("Please select a python file to run")
+                    continue
+                t = run(filename, interpreter=settings["interpreter"])
+                sg.popup(t.stdout)
+
             case "Choose theme":
                 window.disable()
                 theme = None
@@ -294,7 +327,8 @@ def main():
                 break
 
     # save = sg.popup_yes_no("Do you want to save your changes?", title="Save changes")
-    save_settings(window["listbox"].get_list_values())
+    print(settings)
+    save_settings(window["listbox"].get_list_values(), settings)
     window.close()
 
 
