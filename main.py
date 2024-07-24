@@ -162,6 +162,7 @@ def main():
     window.bind("<Control-o>", "Open_bind")
     window.bind("<Control-w>", "Close_bind")
     window.bind("<Control-f>", "Find")
+    window["find_input"].bind("<Return>", "_occurrence")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -169,7 +170,7 @@ def main():
         pass
     while True:
         event, values = window.read()
-
+        print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -249,10 +250,32 @@ def main():
                         )
                     else:
                         window["text"].print(x, end="")
-
+                if count == 0:
+                    window["counter"].update("0/0")
                 window["counter"].update("1/" + str(count))
-
+                window["text"].TKText.see(f"{first_occurence}.0")
                 # window["text"].update(current_scroll_position=True)
+
+            case "find_input_occurrence":
+                occ_text = re.split(
+                    values["find_input"].lower(),
+                    values["text"],
+                    flags=re.IGNORECASE,
+                )
+
+                occurence = window["counter"].get().split("/")
+                current = int(occurence[0])
+                total = int(occurence[1])
+                if current == "0":
+                    continue
+                elif current == total:
+                    window["counter"].update("1/" + str(total))
+                    window["text"].TKText.see(f"{occ_text[0].count("\n")}.0")
+                else:
+                    window["counter"].update(str(current + 1) + "/" + str(total))
+                    window["text"].TKText.see(
+                        f"{sum([x.count("\n") for x in occ_text[:current]]) + 2}.0"
+                    )
 
             case "close_find":
                 window["find_input"].update(visible=False)
