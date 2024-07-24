@@ -1,3 +1,5 @@
+import time
+
 import PySimpleGUI as sg
 import os
 import tkinter
@@ -142,7 +144,10 @@ def main():
         ],
         [
             sg.Multiline(
-                "Choose a file to begin", key="text", expand_x=True, expand_y=True
+                "Choose a file to begin",
+                key="text",
+                expand_x=True,
+                expand_y=True,
             )
         ],
         [
@@ -152,6 +157,7 @@ def main():
                 expand_x=True,
                 expand_y=True,
                 autoscroll=True,
+                disabled=True,
             )
         ],
     ]
@@ -184,7 +190,7 @@ def main():
                 with open(filename, "w") as f:
                     f.write(values["text"])
                     f.close()
-
+                do_highlighting(window, values["text"])
             case "Save As":
                 with open(filename, "w") as f:
                     f.write(values["text"])
@@ -211,7 +217,8 @@ def main():
                     filename = values["listbox"][0]
                 except IndexError:
                     continue
-                load_from_file(filename, window, add_to_list=False, highlight=False)
+                load_from_file(filename, window, add_to_list=False, highlight=True)
+                window["text"].TKText.see("1.0")
                 # with open(filename) as f:
                 #     text = f.read()
                 #     window["text"].update(text)
@@ -221,42 +228,47 @@ def main():
                 sg.theme_previewer(scrollable=True, columns=6)
 
             case "Find":
+                last_scroll = window["text"].TKText.yview()[0]
                 window["find_input"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
+                print(last_scroll)
 
             case "find_input":
+
                 first_occurence = None
                 text = values["text"]
                 search = values["find_input"].lower()
-                count = text.lower().count(search)
-                window["text"].update("")
-
-                text2 = re.split(
-                    f"({search})",
-                    text,
-                    flags=re.IGNORECASE,
-                )
-                for x in text2:
-                    if first_occurence is None:
-                        first_occurence = x.count("\n")
-                    if x.lower() == search:
-                        window["text"].print(
-                            x,
-                            background_color="orange",
-                            text_color="white",
-                            end="",
-                        )
-                    else:
-                        window["text"].print(x, end="")
-                if count == 0:
-                    window["counter"].update("0/0")
-                window["counter"].update("1/" + str(count))
-                window["text"].TKText.see(f"{first_occurence}.0")
-                # window["text"].update(current_scroll_position=True)
+                if search != "":
+                    count = text.lower().count(search)
+                    window["text"].update("")
+                    text2 = re.split(
+                        f"({search})",
+                        text,
+                        flags=re.IGNORECASE,
+                    )
+                    for x in text2:
+                        if first_occurence is None:
+                            first_occurence = x.count("\n")
+                        if x.lower() == search:
+                            window["text"].print(
+                                x,
+                                background_color="orange",
+                                text_color="white",
+                                end="",
+                            )
+                        else:
+                            window["text"].print(x, end="")
+                    if count == 0:
+                        window["counter"].update("0/0")
+                    window["counter"].update("1/" + str(count))
+                    window["text"].TKText.see(f"{first_occurence}.0")
+                else:
+                    window["text"].update(values["text"])
 
             case "find_input_occurrence":
+
                 occ_text = re.split(
                     values["find_input"].lower(),
                     values["text"],
@@ -274,14 +286,14 @@ def main():
                 else:
                     window["counter"].update(str(current + 1) + "/" + str(total))
                     window["text"].TKText.see(
-                        f"{sum([x.count("\n") for x in occ_text[:current]]) + 2}.0"
+                        f"{sum([x.count("\n") for x in occ_text[:(current + 1)]]) + 2}.0"
                     )
 
             case "close_find":
                 window["find_input"].update(visible=False)
                 window["counter"].update(visible=False)
                 window["close_find"].update(visible=False)
-                window["text"].update(values["text"])
+                do_highlighting(window, values["text"])
 
             case "Select interpreter":
 
@@ -299,6 +311,7 @@ def main():
                     sg.popup("Please select a python file to run")
                     continue
                 window["terminal"].update(visible=True)
+
                 window["terminal"].update(f"{settings["interpreter"]} {filename}\n")
                 threading.Thread(
                     target=run,
@@ -314,6 +327,18 @@ def main():
                 # window["terminal"].update(
                 #     f"{settings["interpreter"]} {filename}\n" + t.stdout
                 # )
+
+            case "New":
+                window["text"].update("")
+                filename = sg.popup_get_file(
+                    "Select a location to save to", no_window=True, save_as=True
+                )
+                load_from_file(
+                    filename, window, add_to_list=True, highlight=False, update=False
+                )
+                with open(filename, "w") as f:
+                    f.write("")
+                    f.close()
 
             case "Choose theme":
                 window.disable()

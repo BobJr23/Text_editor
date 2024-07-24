@@ -1,5 +1,6 @@
 import re
 import PySimpleGUI as sg
+import time
 
 # I Used ChatGPT for creating these regex patterns
 patterns = {
@@ -15,46 +16,60 @@ styles = {
     "string": {"text_color": "#98c379"},
     "comment": {"text_color": "#5c6370"},
     "function": {"text_color": "#61afef"},
+    "normal": {"text_color": "#a3b1be"},
 }
 
 
-def highlight_code(text):
+def highlight_code(text, find=None):
+
     segments = []
-    index = 0
-    while index < len(text):
-        matches = [
-            (pattern_name, match.start(), match.end())
-            for pattern_name, pattern in patterns.items()
-            for match in re.finditer(pattern, text[index:], re.MULTILINE)
-        ]
-        if not matches:
-            segments.append(("normal", text[index:]))
-            break
+    t = time.time()
+    last_end = 0
+    if find:
+        new_patterns = {"find": find}
+        new_patterns.update(patterns)
+    else:
+        new_patterns = patterns
+    combined_pattern = "|".join(
+        f"(?P<{name}>{pattern})" for name, pattern in new_patterns.items()
+    )
+    compiled_pattern = re.compile(combined_pattern, re.MULTILINE)
 
-        earliest_match = min(matches, key=lambda x: x[1])
-        pattern_name, start, end = earliest_match
-        start += index
-        end += index
-
-        if start > index:
-            segments.append(("normal", text[index:start]))
-
-        segments.append((pattern_name, text[start:end]))
-        index = end
+    for match in compiled_pattern.finditer(text):
+        start, end = match.span()
+        if start > last_end:
+            segments.append(("normal", text[last_end:start]))
+        for name, value in match.groupdict().items():
+            if value:
+                segments.append((name, value))
+                break
+        last_end = end
+    if last_end < len(text):
+        segments.append(("normal", text[last_end:]))
+    print(time.time() - t)
 
     return segments
 
 
-def do_highlighting(window: sg.Window, input_text):
+def do_highlighting(window: sg.Window, input_text, find=None):
 
-    highlighted_segments = highlight_code(input_text)
+    highlighted_segments = highlight_code(input_text, find)
+    t = time.time()
     window["text"].update("")
     for segment in highlighted_segments:
 
         pattern_name, text_segment = segment
 
-        if pattern_name == "normal":
-            window["text"].print(text_segment, text_color="darkgrey", end="")
+        if pattern_name == "find":
+            window["text"].print(
+                text_segment, text_color="white", background_color="orange", end=""
+            )
         else:
             style = styles[pattern_name]
             window["text"].print(text_segment, text_color=style["text_color"], end="")
+    print(time.time() - t)
+
+
+highlight_code(
+    r"import time\n\nfor x in range(30):\n    print(x)\n    time.sleep(0.05)"
+)
