@@ -22,30 +22,29 @@ styles = {
 
 
 def highlight_code(text, find=""):
-
     segments = []
-    last_end = 0
     if find != "":
-        new_patterns = {"find": find}
-        new_patterns.update(patterns)
-    else:
-        new_patterns = patterns
+
+        comp = re.compile(re.escape(find), re.MULTILINE | re.IGNORECASE)
+
+        for match in comp.finditer(text):
+            start, end = match.span()
+            segments.append(("find", start, end, match.group()))
 
     combined_pattern = "|".join(
-        f"(?P<{name}>{pattern})" for name, pattern in new_patterns.items()
+        f"(?P<{name}>{pattern})" for name, pattern in patterns.items()
     )
     compiled_pattern = re.compile(combined_pattern, re.MULTILINE)
 
     for match in compiled_pattern.finditer(text):
         start, end = match.span()
         pattern_name = next(name for name, value in match.groupdict().items() if value)
-        segments.append((pattern_name, start, end))
+        segments.append((pattern_name, start, end, match.group()))
 
     return segments
 
 
 def do_highlighting(window: sg.Window, input_text, find=""):
-
     highlighted_segments = highlight_code(input_text, find)
     t = time.time()
     window["text"].update("")
@@ -59,12 +58,16 @@ def do_highlighting(window: sg.Window, input_text, find=""):
             pattern_name, foreground=styles[pattern_name]["text_color"]
         )
     text_widget.tag_config("find", background="orange", foreground="white")
-    for pattern_name, start, end in highlighted_segments:
+    first = None
+    print(highlighted_segments)
+    for pattern_name, start, end, _ in highlighted_segments:
         start_idx = f"1.0 + {start}c"
         end_idx = f"1.0 + {end}c"
         text_widget.tag_add(pattern_name, start_idx, end_idx)
-    window["text"].set_focus()
-    return input_text.count(find)
+        if pattern_name == "find" and first is None:
+            first = start_idx
+
+    return input_text.count(find), first
 
 
 highlight_code(

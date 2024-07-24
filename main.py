@@ -239,20 +239,25 @@ def main():
             case "text":
                 cursor_pos = window["text"].Widget.index("insert")
                 do_highlighting(window, values["text"], values["find_input"])
+                window["text"].set_focus()
                 window["text"].Widget.mark_set("insert", cursor_pos)
             case "find_input":
 
-                first_occurence = None
                 text = values["text"]
                 search = values["find_input"].lower()
                 if search != "":
-                    count = do_highlighting(window, text, search)
+                    count, first = do_highlighting(window, text, search)
                 else:
-                    count = do_highlighting(window, text)
+                    count, first = do_highlighting(window, text)
                 if count == 0:
                     window["counter"].update("0/0")
                 else:
                     window["counter"].update("1/" + str(count))
+                    print(first)
+                    # try:
+                    #     window["text"].TKText.see(first)
+                    # except Exception as e:
+                    #     print(first, e)
                 #     count = text.lower().count(search)
                 #     window["text"].update("")
                 #     text2 = re.split(
