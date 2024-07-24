@@ -53,6 +53,7 @@ def load_from_file(
             else:
                 window["text"].update(text)
             f.close()
+        update_lines(window, text)
     if add_to_list:
         current_files = window["listbox"].get_list_values()
         current_files.append(filename)
@@ -79,6 +80,12 @@ def load_settings():
         settings = json.load(f)
         f.close()
     return settings
+
+
+def update_lines(window: sg.Window, text: str):
+    lines = text.count("\n") + 1
+    window["numbers"].update("\n".join([str(x) for x in range(1, lines + 2)]))
+    window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
 def main():
@@ -161,6 +168,7 @@ def main():
                 size=(1, 25),
                 enable_events=True,
                 pad=(0, 0),
+                rstrip=False,
             ),
         ],
         [
@@ -196,7 +204,10 @@ def main():
     window["find_input"].bind("<Return>", "_occurrence")
     window["find_input"].bind("<Escape>", "_close_find")
     window["terminal_input"].bind("<Return>", "_run")
-    window["text"].bind("MouseWheel", "_scroll")
+    window["text"].bind("<MouseWheel>", "_scroll")
+    window["numbers"].bind("<MouseWheel>", "_scroll")
+    window["text"].vsb.config(command="_moving")
+    # window["text"].vsb.configure(command="_moving")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -268,9 +279,19 @@ def main():
                 do_highlighting(window, values["text"], values["find_input"])
                 window["text"].set_focus()
                 window["text"].Widget.mark_set("insert", cursor_pos)
+                update_lines(window, values["text"])
 
             case "text_scroll":
-                print("scroll")
+                scroll_amount = window["text"].TKText.yview()[0]
+                update_lines(window, values["text"])
+                print(scroll_amount)
+
+            case "numbers_scroll":
+                window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
+                print("scrolling numbers")
+
+            case "text_moving":
+                print("moving!")
 
             case "find_input":
 
