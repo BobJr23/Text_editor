@@ -29,7 +29,7 @@ def highlight_code(text, find=""):
 
         for match in comp.finditer(text):
             start, end = match.span()
-            segments.append(("find", start, end, match.group()))
+            segments.append(("find", start, end))
 
     combined_pattern = "|".join(
         f"(?P<{name}>{pattern})" for name, pattern in patterns.items()
@@ -39,7 +39,7 @@ def highlight_code(text, find=""):
     for match in compiled_pattern.finditer(text):
         start, end = match.span()
         pattern_name = next(name for name, value in match.groupdict().items() if value)
-        segments.append((pattern_name, start, end, match.group()))
+        segments.append((pattern_name, start, end))
 
     return segments
 
@@ -59,17 +59,17 @@ def do_highlighting(window: sg.Window, input_text, find=""):
         )
     text_widget.tag_config("find", background="orange", foreground="white")
     first = None
-    print(highlighted_segments)
-    for pattern_name, start, end, _ in highlighted_segments:
+    for pattern_name, start, end in highlighted_segments:
         start_idx = f"1.0 + {start}c"
         end_idx = f"1.0 + {end}c"
         text_widget.tag_add(pattern_name, start_idx, end_idx)
         if pattern_name == "find" and first is None:
             first = start_idx
 
-    return input_text.count(find), first
+    return input_text.count(find) if find != "" else 0, first
 
 
-highlight_code(
-    r"import time\n\nfor x in range(30):\n    print(x)\n    time.sleep(0.05)"
-)
+if __name__ == "__main__":
+    highlight_code(
+        r"import time\n\nfor x in range(30):\n    print(x)\n    time.sleep(0.05)"
+    )

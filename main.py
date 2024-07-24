@@ -158,7 +158,19 @@ def main():
                 expand_x=True,
                 expand_y=True,
                 autoscroll=True,
-                disabled=False,
+                disabled=True,
+            ),
+        ],
+        [
+            sg.Multiline(
+                default_text=os.getcwd() + ">",
+                key="path",
+                disabled=True,
+                visible=True,
+                size=(70, 2),
+            ),
+            sg.Multiline(
+                visible=True, key="terminal_input", expand_x=True, size=(0, 2)
             ),
         ],
     ]
@@ -170,6 +182,8 @@ def main():
     window.bind("<Control-w>", "Close_bind")
     window.bind("<Control-f>", "Find")
     window["find_input"].bind("<Return>", "_occurrence")
+    window["find_input"].bind("<Escape>", "_close_find")
+    window["terminal_input"].bind("<Return>", "_run")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -253,36 +267,7 @@ def main():
                     window["counter"].update("0/0")
                 else:
                     window["counter"].update("1/" + str(count))
-                    print(first)
-                    # try:
-                    #     window["text"].TKText.see(first)
-                    # except Exception as e:
-                    #     print(first, e)
-                #     count = text.lower().count(search)
-                #     window["text"].update("")
-                #     text2 = re.split(
-                #         f"({search})",
-                #         text,
-                #         flags=re.IGNORECASE,
-                #     )
-                #     for x in text2:
-                #         if first_occurence is None:
-                #             first_occurence = x.count("\n")
-                #         if x.lower() == search:
-                #             window["text"].print(
-                #                 x,
-                #                 background_color="orange",
-                #                 text_color="white",
-                #                 end="",
-                #             )
-                #         else:
-                #             window["text"].print(x, end="")
-                #     if count == 0:
-                #         window["counter"].update("0/0")
-                #     window["counter"].update("1/" + str(count))
-                #     window["text"].TKText.see(f"{first_occurence}.0")
-                # else:
-                #     window["text"].update(values["text"])
+                    window["text"].TKText.see(first)
 
             case "find_input_occurrence":
 
@@ -292,9 +277,9 @@ def main():
                     flags=re.IGNORECASE,
                 )
 
-                occurence = window["counter"].get().split("/")
-                current = int(occurence[0])
-                total = int(occurence[1])
+                occurrence = window["counter"].get().split("/")
+                current = int(occurrence[0])
+                total = int(occurrence[1])
                 if current == "0":
                     continue
                 elif current == total:
@@ -306,7 +291,7 @@ def main():
                         f"{sum([x.count("\n") for x in occ_text[:(current + 1)]]) + 2}.0"
                     )
 
-            case "close_find":
+            case "close_find" | "find_input_close_find":
                 window["find_input"].update(visible=False)
                 window["counter"].update(visible=False)
                 window["close_find"].update(visible=False)
@@ -328,16 +313,17 @@ def main():
                     sg.popup("Please select a python file to run")
                     continue
                 window["terminal"].update(visible=True)
-                window["terminal"].update(disabled=True)
                 window["terminal"].update(f"{settings["interpreter"]} {filename}\n")
                 threading.Thread(
                     target=run,
                     args=(
                         filename,
-                        os.path.dirname(filename),
                         settings["interpreter"],
-                        window["terminal"],
                     ),
+                    kwargs={
+                        "start": os.path.dirname(filename),
+                        "element": window["terminal"],
+                    },
                     daemon=True,
                 ).start()
 
@@ -356,6 +342,21 @@ def main():
                 with open(filename, "w") as f:
                     f.write("")
                     f.close()
+
+            case "terminal_input_run":
+                window["terminal_input"].update("")
+                window["terminal"].update(
+                    values["path"] + values["terminal_input"] + "\n"
+                )
+                threading.Thread(
+                    target=run,
+                    args=(
+                        values["terminal_input"],
+                        os.path.dirname(values["terminal_input"]),
+                    ),
+                    kwargs={"start": values["path"], "element": window["terminal"]},
+                    daemon=True,
+                ).start()
 
             case "Choose theme":
                 window.disable()
