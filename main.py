@@ -148,6 +148,7 @@ def main():
                 key="text",
                 expand_x=True,
                 expand_y=True,
+                enable_events=True,
             )
         ],
         [
@@ -235,37 +236,48 @@ def main():
                 window["find_input"].set_focus()
                 print(last_scroll)
 
+            case "text":
+                cursor_pos = window["text"].Widget.index("insert")
+                do_highlighting(window, values["text"], values["find_input"])
+                window["text"].Widget.mark_set("insert", cursor_pos)
             case "find_input":
 
                 first_occurence = None
                 text = values["text"]
                 search = values["find_input"].lower()
                 if search != "":
-                    count = text.lower().count(search)
-                    window["text"].update("")
-                    text2 = re.split(
-                        f"({search})",
-                        text,
-                        flags=re.IGNORECASE,
-                    )
-                    for x in text2:
-                        if first_occurence is None:
-                            first_occurence = x.count("\n")
-                        if x.lower() == search:
-                            window["text"].print(
-                                x,
-                                background_color="orange",
-                                text_color="white",
-                                end="",
-                            )
-                        else:
-                            window["text"].print(x, end="")
-                    if count == 0:
-                        window["counter"].update("0/0")
-                    window["counter"].update("1/" + str(count))
-                    window["text"].TKText.see(f"{first_occurence}.0")
+                    count = do_highlighting(window, text, search)
                 else:
-                    window["text"].update(values["text"])
+                    count = do_highlighting(window, text)
+                if count == 0:
+                    window["counter"].update("0/0")
+                else:
+                    window["counter"].update("1/" + str(count))
+                #     count = text.lower().count(search)
+                #     window["text"].update("")
+                #     text2 = re.split(
+                #         f"({search})",
+                #         text,
+                #         flags=re.IGNORECASE,
+                #     )
+                #     for x in text2:
+                #         if first_occurence is None:
+                #             first_occurence = x.count("\n")
+                #         if x.lower() == search:
+                #             window["text"].print(
+                #                 x,
+                #                 background_color="orange",
+                #                 text_color="white",
+                #                 end="",
+                #             )
+                #         else:
+                #             window["text"].print(x, end="")
+                #     if count == 0:
+                #         window["counter"].update("0/0")
+                #     window["counter"].update("1/" + str(count))
+                #     window["text"].TKText.see(f"{first_occurence}.0")
+                # else:
+                #     window["text"].update(values["text"])
 
             case "find_input_occurrence":
 

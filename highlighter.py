@@ -5,10 +5,10 @@ import tkinter as tk
 
 # I Used ChatGPT for creating these regex patterns
 patterns = {
-    "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
-    "string": r"(\".*?\"|\'.*?\')",
     "comment": r"(#.*?$)",
-    "keyword": r"\b(and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|move|nonlocal|not|or|pass|raise|return|try|with|while|yield)\b",
+    "string": r"(\".*?\"|\'.*?\')",
+    "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
+    "keyword": r"\b(and|as|assert|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|move|nonlocal|not|or|pass|raise|return|True|try|with|while|yield)\b",
 }
 
 styles = {
@@ -21,16 +21,16 @@ styles = {
 }
 
 
-def highlight_code(text, find=None):
+def highlight_code(text, find=""):
 
     segments = []
-    t = time.time()
     last_end = 0
-    if find:
+    if find != "":
         new_patterns = {"find": find}
         new_patterns.update(patterns)
     else:
         new_patterns = patterns
+
     combined_pattern = "|".join(
         f"(?P<{name}>{pattern})" for name, pattern in new_patterns.items()
     )
@@ -38,60 +38,33 @@ def highlight_code(text, find=None):
 
     for match in compiled_pattern.finditer(text):
         start, end = match.span()
-        if start > last_end:
-            segments.append(("normal", text[last_end:start]))
-        for name, value in match.groupdict().items():
-            if value:
-                segments.append((name, value))
-                break
-        last_end = end
-    if last_end < len(text):
-        segments.append(("normal", text[last_end:]))
-    print(time.time() - t)
+        pattern_name = next(name for name, value in match.groupdict().items() if value)
+        segments.append((pattern_name, start, end))
 
     return segments
 
 
-def do_highlighting(window: sg.Window, input_text, find=None):
+def do_highlighting(window: sg.Window, input_text, find=""):
 
     highlighted_segments = highlight_code(input_text, find)
     t = time.time()
     window["text"].update("")
-    buffer = ""
-    # METHOD 1
-    # for segment in highlighted_segments:
-    #
-    #     pattern_name, text_segment = segment
-    #
-    #     if pattern_name == "find":
-    #         window["text"].print(
-    #             text_segment, text_color="white", background_color="orange", end=""
-    #         )
-    #     else:
-    #         style = styles[pattern_name]
-    #         # buffer += f'[{style["text_color"]}] {text_segment} '
-    #         window["text"].print(text_segment, text_color=style["text_color"], end="")
-    # METHOD 2 expereimental
-    output_text = ""
-    for segment in highlighted_segments:
-        pattern_name, text_segment = segment
-        style = styles[pattern_name]
-        output_text += text_segment
-
-    window["text"].update(output_text)
 
     text_widget = window["text"].Widget
     text_widget.delete("1.0", tk.END)
-    text_widget.insert("1.0", output_text)
+    text_widget.insert("1.0", input_text)
 
-    for segment in highlighted_segments:
-        pattern_name, text_segment = segment
-        style = styles[pattern_name]
-        start_idx = text_widget.search(text_segment, "1.0", tk.END)
-        end_idx = f"{start_idx}+{len(text_segment)}c"
+    for pattern_name in styles:
+        text_widget.tag_config(
+            pattern_name, foreground=styles[pattern_name]["text_color"]
+        )
+    text_widget.tag_config("find", background="orange", foreground="white")
+    for pattern_name, start, end in highlighted_segments:
+        start_idx = f"1.0 + {start}c"
+        end_idx = f"1.0 + {end}c"
         text_widget.tag_add(pattern_name, start_idx, end_idx)
-        text_widget.tag_config(pattern_name, foreground=style["text_color"])
-    print(time.time() - t)
+    window["text"].set_focus()
+    return input_text.count(find)
 
 
 highlight_code(
