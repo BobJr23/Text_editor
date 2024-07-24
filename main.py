@@ -1,8 +1,4 @@
-import time
-
 import PySimpleGUI as sg
-import os
-import tkinter
 import json
 import re
 from highlighter import do_highlighting
@@ -22,8 +18,6 @@ def update_theme(window: sg.Window, selected_theme):
         window.TKroot.config(background=window_bkg)
     except Exception as e:
         print(e)
-
-        # iterate over all widgets:
 
     for v, element in window.AllKeysDict.items():
 
@@ -317,8 +311,8 @@ def main():
                 threading.Thread(
                     target=run,
                     args=(
-                        filename,
                         settings["interpreter"],
+                        filename,
                     ),
                     kwargs={
                         "start": os.path.dirname(filename),
@@ -326,10 +320,6 @@ def main():
                     },
                     daemon=True,
                 ).start()
-
-                # window["terminal"].update(
-                #     f"{settings["interpreter"]} {filename}\n" + t.stdout
-                # )
 
             case "New":
                 window["text"].update("")
@@ -348,13 +338,15 @@ def main():
                 window["terminal"].update(
                     values["path"] + values["terminal_input"] + "\n"
                 )
+                print(values["terminal_input"])
+                print(values["terminal_input"].split())
                 threading.Thread(
                     target=run,
-                    args=(
-                        values["terminal_input"],
-                        os.path.dirname(values["terminal_input"]),
-                    ),
-                    kwargs={"start": values["path"], "element": window["terminal"]},
+                    kwargs={
+                        "start": values["path"].split(">")[0],
+                        "element": window["terminal"],
+                        "arg": (values["terminal_input"].split()),
+                    },
                     daemon=True,
                 ).start()
 

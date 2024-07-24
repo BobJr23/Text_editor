@@ -2,16 +2,15 @@ import subprocess
 import os
 
 
-def run(*args, element=None, start=os.getcwd()):
-    print(list(args))
-    exit()
-    print("Running!")
+def run(arg: tuple, element=None, start=os.getcwd()):
+
     process = subprocess.Popen(
-        list(args),
+        arg,
         cwd=start,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        shell=True,
     )
 
     if element:
@@ -27,12 +26,14 @@ def run(*args, element=None, start=os.getcwd()):
     else:
         while True:
             line = process.stdout.readline()
+            line2 = process.stderr.readline()
             if not line and process.poll() is not None:
                 break
             if line:
                 print(line, end="")
+            if line2:
+                print(line2, end="")
 
 
 if __name__ == "__main__":
-    # run("ls", "test", "chat")
-    os.system("dir")
+    run("date /t".split())
