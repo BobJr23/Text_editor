@@ -152,13 +152,13 @@ def main():
         ],
         [
             sg.Multiline(
-                visible=False,
+                visible=True,
                 key="terminal",
                 expand_x=True,
                 expand_y=True,
                 autoscroll=True,
-                disabled=True,
-            )
+                disabled=False,
+            ),
         ],
     ]
 
@@ -311,7 +311,7 @@ def main():
                     sg.popup("Please select a python file to run")
                     continue
                 window["terminal"].update(visible=True)
-
+                window["terminal"].update(disabled=True)
                 window["terminal"].update(f"{settings["interpreter"]} {filename}\n")
                 threading.Thread(
                     target=run,

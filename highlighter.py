@@ -1,13 +1,14 @@
 import re
 import PySimpleGUI as sg
 import time
+import tkinter as tk
 
 # I Used ChatGPT for creating these regex patterns
 patterns = {
-    "keyword": r"\b(import|from|as|if|else|elif|for|while|def|return|in|and|or|not|is|class|try|except|finally|with|lambda|yield|assert|break|continue|del|global|nonlocal|pass|raise|True|False|None)\b",
+    "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
     "string": r"(\".*?\"|\'.*?\')",
     "comment": r"(#.*?$)",
-    "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
+    "keyword": r"\b(and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|move|nonlocal|not|or|pass|raise|return|try|with|while|yield)\b",
 }
 
 styles = {
@@ -56,17 +57,40 @@ def do_highlighting(window: sg.Window, input_text, find=None):
     highlighted_segments = highlight_code(input_text, find)
     t = time.time()
     window["text"].update("")
+    buffer = ""
+    # METHOD 1
+    # for segment in highlighted_segments:
+    #
+    #     pattern_name, text_segment = segment
+    #
+    #     if pattern_name == "find":
+    #         window["text"].print(
+    #             text_segment, text_color="white", background_color="orange", end=""
+    #         )
+    #     else:
+    #         style = styles[pattern_name]
+    #         # buffer += f'[{style["text_color"]}] {text_segment} '
+    #         window["text"].print(text_segment, text_color=style["text_color"], end="")
+    # METHOD 2 expereimental
+    output_text = ""
     for segment in highlighted_segments:
-
         pattern_name, text_segment = segment
+        style = styles[pattern_name]
+        output_text += text_segment
 
-        if pattern_name == "find":
-            window["text"].print(
-                text_segment, text_color="white", background_color="orange", end=""
-            )
-        else:
-            style = styles[pattern_name]
-            window["text"].print(text_segment, text_color=style["text_color"], end="")
+    window["text"].update(output_text)
+
+    text_widget = window["text"].Widget
+    text_widget.delete("1.0", tk.END)
+    text_widget.insert("1.0", output_text)
+
+    for segment in highlighted_segments:
+        pattern_name, text_segment = segment
+        style = styles[pattern_name]
+        start_idx = text_widget.search(text_segment, "1.0", tk.END)
+        end_idx = f"{start_idx}+{len(text_segment)}c"
+        text_widget.tag_add(pattern_name, start_idx, end_idx)
+        text_widget.tag_config(pattern_name, foreground=style["text_color"])
     print(time.time() - t)
 
 
