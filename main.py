@@ -111,7 +111,16 @@ def main():
                     ],
                     ["Theme", ["Preview themes", "Choose theme"]],
                     ["Edit", ["Find"]],
-                    ["Run", ["Select interpreter", "Run file"]],
+                    [
+                        "Run",
+                        [
+                            "Select interpreter",
+                            "Run file",
+                            "---",
+                            "Run file in Command Prompt",
+                            "Open Command Prompt",
+                        ],
+                    ],
                 ]
             ),
         ],
@@ -138,12 +147,21 @@ def main():
         ],
         [
             sg.Multiline(
+                default_text="1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+                key="numbers",
+                size=(4, 25),
+                disabled=True,
+                no_scrollbar=True,
+                pad=(1, 0),
+            ),
+            sg.Multiline(
                 "Choose a file to begin",
                 key="text",
                 expand_x=True,
-                expand_y=True,
+                size=(1, 25),
                 enable_events=True,
-            )
+                pad=(0, 0),
+            ),
         ],
         [
             sg.Multiline(
@@ -178,6 +196,7 @@ def main():
     window["find_input"].bind("<Return>", "_occurrence")
     window["find_input"].bind("<Escape>", "_close_find")
     window["terminal_input"].bind("<Return>", "_run")
+    window["text"].bind("MouseWheel", "_scroll")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -249,6 +268,10 @@ def main():
                 do_highlighting(window, values["text"], values["find_input"])
                 window["text"].set_focus()
                 window["text"].Widget.mark_set("insert", cursor_pos)
+
+            case "text_scroll":
+                print("scroll")
+
             case "find_input":
 
                 text = values["text"]
@@ -320,6 +343,12 @@ def main():
                     },
                     daemon=True,
                 ).start()
+
+            case "Run file in Command Prompt":
+                run([settings["interpreter"], filename], opencommand=True)
+
+            case "Open Command Prompt":
+                os.system(f"start cmd /k")
 
             case "New":
                 window["text"].update("")
