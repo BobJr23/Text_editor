@@ -9,6 +9,7 @@ from run_file import run
 import threading
 
 
+# modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
     if selected_theme is None:
         return
@@ -38,22 +39,31 @@ def update_theme(window: sg.Window, selected_theme):
             print(e)
 
 
-def load_from_file(
-        filename, window: sg.Window, add_to_tab=True, update=True, highlight=True
-):
+def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, update=True):
     if update:
         with open(filename) as f:
             text = f.read()
-            if highlight:
-                do_highlighting(window, text)
-            else:
-                window["text"].update(text)
+
+            do_highlighting(window, text)
+
             f.close()
         update_lines(window, text)
+
     if add_to_tab:
         window["TabGroup"].add_tab(
             sg.Tab(title=os.path.basename(filename), layout=[[]])
         )
+        window["TabGroup"].Widget.select(len(tab_dict) - 1)
+        tab_dict["current_tab"] = len(tab_dict) - 1
+        tab_dict[os.path.basename(filename)] = filename
+    else:
+        tab_dict["current_tab"] = (
+            list(tab_dict.keys()).index(os.path.basename(filename)) - 1
+        )
+    window["path"].update(f"{os.path.dirname(filename)}>")
+
+    print(filename)
+    return tab_dict
 
 
 def save_settings(open_files, settings):
@@ -94,7 +104,7 @@ def highlight_line(window: sg.Window, cursor_pos):
 def main():
     filename = None
     settings = load_settings()
-
+    Tab_dict = {"current_tab": None}
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
 
@@ -231,7 +241,7 @@ def main():
     window["text"].Widget.tag_config("find", background="orange", foreground="white")
     try:
         for x in settings["open_files"]:
-            load_from_file(x, window, update=False, highlight=False)
+            Tab_dict = load_from_file(x, window, Tab_dict, update=False)
     except KeyError:
         pass
     while True:
@@ -244,7 +254,7 @@ def main():
             case "Open" | "Open_bind":
                 filename = sg.popup_get_file("Select a file", no_window=True)
                 if filename is not None:
-                    load_from_file(filename, window, highlight=False)
+                    Tab_dict = load_from_file(filename, window, Tab_dict)
 
             case "Save" | "Save_bind":
                 with open(filename, "w") as f:
@@ -265,9 +275,9 @@ def main():
                 )
 
             case "Close file" | "Close_bind":
-                current_tab = window["TabGroup"].get()
+                current_tab = Tab_dict["current_tab"]
                 if current_tab:
-                    window["TabGroup"].delete_tab(current_tab)
+                    window["TabGroup"].Widget.forget(current_tab)
                     window["text"].update("")
 
             case "TabGroup":
@@ -276,7 +286,9 @@ def main():
                 except IndexError:
                     print("index error")
                     continue
-                load_from_file(filename, window, add_to_tab=False, highlight=True)
+                Tab_dict = load_from_file(
+                    Tab_dict[filename], window, Tab_dict, add_to_tab=False
+                )
                 window["text"].TKText.see("1.0")
 
             case "Preview themes":
@@ -308,7 +320,7 @@ def main():
                     "current",
                     cursor_pos + "linestart",
                     str(float(cursor_pos) + 1) + "linestart",
-                    )
+                )
 
             case "find_input":
                 text = values["text"]
@@ -371,7 +383,7 @@ def main():
                         target=run,
                         kwargs={
                             "arg": [settings["interpreter"], filename],
-                            "start": os.path.dirname(filename),
+                            "start": values["path"].split(">")[0],
                             "element": window["terminal"],
                         },
                         daemon=True,
@@ -388,8 +400,8 @@ def main():
                 filename = sg.popup_get_file(
                     "Select a location to save to", no_window=True, save_as=True
                 )
-                load_from_file(
-                    filename, window, add_to_tab=True, highlight=False, update=False
+                Tab_dict = load_from_file(
+                    filename, window, Tab_dict, add_to_tab=True, update=False
                 )
                 with open(filename, "w") as f:
                     f.write("")
@@ -473,9 +485,7 @@ def main():
             case "Exit editor":
                 break
 
-    save_settings(
-        [tab.split("-TAB-")[1][:-1] for tab in window["TabGroup"].tab_list()], settings
-    )
+    save_settings([tab for tab in Tab_dict.values() if isinstance(tab, str)], settings)
     window.close()
 
 
