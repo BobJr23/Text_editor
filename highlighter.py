@@ -7,7 +7,10 @@ import tkinter as tk
 patterns = {
     "comment": r"(#.*?$)",
     "string": r"(\".*?\"|\'.*?\')",
+    "parentheses": r"[()\[\]{}]",
     "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
+    "variables": r"def\s+\w+\s*\(([^)]*)\)",
+    "numbers": r"[-+]?\b\d+(?:\.\d*)?(?:[eE][-+]?\d+)?\b",
     "keyword": r"\b(and|as|assert|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|move|nonlocal|not|or|pass|raise|return|True|try|with|while|yield)\b",
 }
 
@@ -16,7 +19,10 @@ styles = {
     "keyword": {"text_color": "#c678dd"},
     "string": {"text_color": "#98c379"},
     "comment": {"text_color": "#5c6370"},
+    "parentheses": {"text_color": "#e8ba36"},
     "function": {"text_color": "#61afef"},
+    "variables": {"text_color": "#c7935f"},
+    "numbers": {"text_color": "#c7935f"},
     "normal": {"text_color": "#a3b1be"},
 }
 
@@ -37,9 +43,28 @@ def highlight_code(text, find=""):
     compiled_pattern = re.compile(combined_pattern, re.MULTILINE)
 
     for match in compiled_pattern.finditer(text):
+
         start, end = match.span()
         pattern_name = next(name for name, value in match.groupdict().items() if value)
-        segments.append((pattern_name, start, end))
+        if pattern_name == "variables":
+            m = match.group(0)
+            index = m.index("(")
+            for param in m[index + 1 : m.index(")")].split(","):
+                segments.append(
+                    "variables",
+                    start + index + 1,
+                    (start + index + 1 + len(re.split(r":|\s*=", param.strip())[0])),
+                )
+
+            print([])
+            continue
+        segments.append(
+            (
+                pattern_name,
+                start,
+                end,
+            )
+        )
 
     return segments
 

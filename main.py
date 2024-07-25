@@ -1,3 +1,5 @@
+import random
+
 import PySimpleGUI as sg
 import json
 import re
@@ -85,6 +87,10 @@ def load_settings():
 def update_lines(window: sg.Window, text: str):
     lines = text.count("\n") + 1
     window["numbers"].update("\n".join([str(x) for x in range(1, lines + 2)]))
+    window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
+
+
+def drag_scroll(event, window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
@@ -205,9 +211,10 @@ def main():
     window["find_input"].bind("<Escape>", "_close_find")
     window["terminal_input"].bind("<Return>", "_run")
     window["text"].bind("<MouseWheel>", "_scroll")
+    window["text"].bind("<Key>", "_text")
+    window["text"].vsb.bind("<B1-Motion>", lambda e: drag_scroll(e, window))
     window["numbers"].bind("<MouseWheel>", "_scroll")
-    window["text"].vsb.config(command="_moving")
-    # window["text"].vsb.configure(command="_moving")
+
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -215,7 +222,7 @@ def main():
         pass
     while True:
         event, values = window.read()
-        print(event, values)
+        # print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -267,12 +274,11 @@ def main():
                 sg.theme_previewer(scrollable=True, columns=6)
 
             case "Find":
-                last_scroll = window["text"].TKText.yview()[0]
+
                 window["find_input"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
-                print(last_scroll)
 
             case "text":
                 cursor_pos = window["text"].Widget.index("insert")
@@ -284,14 +290,9 @@ def main():
             case "text_scroll":
                 scroll_amount = window["text"].TKText.yview()[0]
                 update_lines(window, values["text"])
-                print(scroll_amount)
 
             case "numbers_scroll":
                 window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
-                print("scrolling numbers")
-
-            case "text_moving":
-                print("moving!")
 
             case "find_input":
 
