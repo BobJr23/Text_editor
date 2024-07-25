@@ -45,25 +45,7 @@ def highlight_code(text, find=""):
     for match in compiled_pattern.finditer(text):
         start, end = match.span()
         pattern_name = next(name for name, value in match.groupdict().items() if value)
-        # if pattern_name == "variables":
-        #     m = match.group(0)
-        #     index = m.index("(")
-        #     for param in m[index + 1 : m.index(")")].split(","):
-        #         segments.append(
-        #             (
-        #                 "variables",
-        #                 start + index + 1,
-        #                 (
-        #                     start
-        #                     + index
-        #                     + 2
-        #                     + len(re.split(r":|\s*=", param.strip())[0])
-        #                 ),
-        #             )
-        #         )
-        #         index += len(param) + 1
-        #
-        #     continue
+
         segments.append(
             (
                 pattern_name,
@@ -76,22 +58,15 @@ def highlight_code(text, find=""):
 
 
 def do_highlighting(window: sg.Window, input_text, find="", cursor_pos="1.0"):
-    cursor_pos = window["text"].Widget.index("insert")
+
     highlighted_segments = highlight_code(input_text, find)
     t = time.time()
-    window["text"].update("")
+    # window["text"].update("")
 
     text_widget = window["text"].Widget
     text_widget.delete("1.0", tk.END)
     text_widget.insert("1.0", input_text)
-
-    window["text"].Widget.tag_remove("current", "1.0", "end")
-    window["text"].Widget.tag_add(
-        "current",
-        cursor_pos + "linestart",
-        str(float(cursor_pos) + 1) + "linestart",
-    )
-
+    text_widget.tag_add("normal", "1.0", tk.END)
     first = None
     for pattern_name, start, end in highlighted_segments:
         start_idx = f"1.0 + {start}c"

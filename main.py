@@ -151,7 +151,9 @@ def main():
                 sbar_width=3,
                 sbar_arrow_width=3,
             ),
-            sg.Input(visible=False, enable_events=True, key="find_input"),
+            sg.Input(
+                visible=False, enable_events=True, key="find_input", tooltip="Find"
+            ),
             sg.Button(
                 button_text="x",
                 visible=False,
@@ -166,29 +168,45 @@ def main():
             sg.Multiline(
                 default_text="1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
                 key="numbers",
-                size=(4, 25),
+                size=(4, 0),
                 disabled=True,
                 no_scrollbar=True,
+                expand_y=True,
+                expand_x=False,
                 pad=(1, 0),
             ),
             sg.Multiline(
                 "Choose a file to begin",
                 key="text",
-                expand_x=True,
-                size=(1, 25),
+                size=(190, 35),
                 enable_events=True,
+                expand_y=True,
                 pad=(0, 0),
                 rstrip=False,
+                selected_background_color="#404859",
             ),
+        ],
+        [
+            sg.Button(
+                ".",
+                key="resize",
+                tooltip="Resize",
+                enable_events=True,
+                size=(0, 1),
+                expand_x=True,
+                pad=(0, 0),
+            )
         ],
         [
             sg.Multiline(
                 visible=True,
                 key="terminal",
+                default_text="Terminal output",
                 expand_x=True,
                 expand_y=True,
                 autoscroll=True,
                 disabled=True,
+                # size=(0, 30),
             ),
         ],
         [
@@ -219,13 +237,16 @@ def main():
     window["text"].vsb.bind("<B1-Motion>", lambda e: drag_scroll(e, window))
     window["text"].bind("<Button-1>", "_click")
     window["numbers"].bind("<MouseWheel>", "_scroll")
+    window["text"].Widget.tag_config(
+        "normal", foreground=styles["normal"]["text_color"]
+    )
 
     for pattern_name in styles:
         window["text"].Widget.tag_config(
             pattern_name, foreground=styles[pattern_name]["text_color"]
         )
-    window["text"].Widget.tag_config("find", background="orange", foreground="white")
     window["text"].Widget.tag_config("current", background="#30343c")
+    window["text"].Widget.tag_config("find", background="orange", foreground="white")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -233,7 +254,7 @@ def main():
         pass
     while True:
         event, values = window.read()
-        # print(event, values)
+        print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -306,14 +327,13 @@ def main():
                 window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
 
             case "text_click":
-                scroll_amount = window["text"].TKText.yview()[0]
                 cursor_pos = window["text"].Widget.index("insert")
-                do_highlighting(window, values["text"])
-                window["text"].set_focus()
-                window["text"].Widget.mark_set("insert", cursor_pos)
-                window["text"].TKText.see(cursor_pos)
-                window["text"].TKText.yview_moveto(scroll_amount)
-                # highlight_line(window, window["text"].Widget.index("insert"))
+                window["text"].Widget.tag_remove("current", "1.0", "end")
+                window["text"].Widget.tag_add(
+                    "current",
+                    cursor_pos + "linestart",
+                    str(float(cursor_pos) + 1) + "linestart",
+                )
 
             case "find_input":
 
@@ -406,12 +426,11 @@ def main():
                     f.close()
 
             case "terminal_input_run":
+                window["text"].set_size((190, 5))
                 window["terminal_input"].update("")
                 window["terminal"].update(
                     values["path"] + values["terminal_input"] + "\n"
                 )
-                print(values["terminal_input"])
-                print(values["terminal_input"].split())
                 threading.Thread(
                     target=run,
                     kwargs={

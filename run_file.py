@@ -23,8 +23,8 @@ def run(arg, element=None, start=os.getcwd(), opencommand=False):
                 if line:
                     element.update(value=line, append=True)
             process.wait()
-            print("Done!")
-            element.update(value="\n" + "Done!", append=True)
+            # print("Done!")
+            element.update(value="\n" + "Process finished", append=True)
         else:
             while True:
                 line = process.stdout.readline()
