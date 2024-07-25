@@ -3,6 +3,7 @@ import os
 
 
 def run(arg, element=None, start=os.getcwd(), opencommand=False):
+    print(arg)
     if opencommand:
         os.system(f"start cmd /k {" ".join(arg)}")
     else:
@@ -12,7 +13,7 @@ def run(arg, element=None, start=os.getcwd(), opencommand=False):
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=True,
+            # shell=True,
         )
 
         if element:

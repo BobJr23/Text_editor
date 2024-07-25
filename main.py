@@ -1,6 +1,5 @@
 import random
 import time
-
 import PySimpleGUI as sg
 import json
 import re
@@ -10,7 +9,6 @@ from run_file import run
 import threading
 
 
-# modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
     if selected_theme is None:
         return
@@ -23,12 +21,9 @@ def update_theme(window: sg.Window, selected_theme):
         print(e)
 
     for v, element in window.AllKeysDict.items():
-
         try:
-
             if element.Type == "button":
                 color = current_them.get("BUTTON")
-
                 element.Widget.config(foreground=color[0], background=color[1])
             elif element.Type in ["listbox", "multiline", "input"]:
                 color = current_them.get("INPUT")
@@ -38,15 +33,13 @@ def update_theme(window: sg.Window, selected_theme):
             else:
                 color = current_them.get("BACKGROUND")
                 element.Widget.config(background=color)
-
             element.update()
-
         except Exception as e:
             print(e)
 
 
 def load_from_file(
-    filename, window: sg.Window, add_to_list=True, update=True, highlight=True
+        filename, window: sg.Window, add_to_tab=True, update=True, highlight=True
 ):
     if update:
         with open(filename) as f:
@@ -57,15 +50,14 @@ def load_from_file(
                 window["text"].update(text)
             f.close()
         update_lines(window, text)
-    if add_to_list:
-        current_files = window["listbox"].get_list_values()
-        current_files.append(filename)
-        window["listbox"].update(current_files)
+    if add_to_tab:
+        window["TabGroup"].add_tab(
+            sg.Tab(title=os.path.basename(filename), layout=[[]])
+        )
 
 
 def save_settings(open_files, settings):
     with open("settings.json", "w") as f:
-        # implement files opened
         f.write(
             json.dumps(
                 {
@@ -95,18 +87,17 @@ def drag_scroll(event, window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
-def highlight_line(window: sg.Window, cursor_pos): ...
+def highlight_line(window: sg.Window, cursor_pos):
+    pass
 
 
 def main():
     filename = None
     settings = load_settings()
 
-    # CREATING CUSTOM THEME
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
 
-    # Upload ttf file to C:\Windows\Fonts folder
     sg.set_options(font=(FONT, 12))
 
     layout = [
@@ -142,15 +133,7 @@ def main():
             ),
         ],
         [
-            sg.Listbox(
-                values=[],
-                enable_events=True,
-                size=(None, 3),
-                key="listbox",
-                expand_x=True,
-                sbar_width=3,
-                sbar_arrow_width=3,
-            ),
+            sg.TabGroup([[]], key="TabGroup", enable_events=True, expand_x=True),
             sg.Input(
                 visible=False, enable_events=True, key="find_input", tooltip="Find"
             ),
@@ -206,7 +189,6 @@ def main():
                 expand_y=True,
                 autoscroll=True,
                 disabled=True,
-                # size=(0, 30),
             ),
         ],
         [
@@ -283,30 +265,24 @@ def main():
                 )
 
             case "Close file" | "Close_bind":
+                current_tab = window["TabGroup"].get()
+                if current_tab:
+                    window["TabGroup"].delete_tab(current_tab)
+                    window["text"].update("")
 
-                current_files = window["listbox"].get_list_values()
-
-                current_files.pop(current_files.index(values["listbox"][0]))
-                window["listbox"].update(current_files)
-                window["text"].update("")
-
-            case "listbox":
+            case "TabGroup":
                 try:
-                    filename = values["listbox"][0]
+                    filename = values["TabGroup"]
                 except IndexError:
+                    print("index error")
                     continue
-                load_from_file(filename, window, add_to_list=False, highlight=True)
+                load_from_file(filename, window, add_to_tab=False, highlight=True)
                 window["text"].TKText.see("1.0")
-                # with open(filename) as f:
-                #     text = f.read()
-                #     window["text"].update(text)
-                #     f.close()
 
             case "Preview themes":
                 sg.theme_previewer(scrollable=True, columns=6)
 
             case "Find":
-
                 window["find_input"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
@@ -320,7 +296,6 @@ def main():
                 update_lines(window, values["text"])
 
             case "text_scroll":
-
                 update_lines(window, values["text"])
 
             case "numbers_scroll":
@@ -333,10 +308,9 @@ def main():
                     "current",
                     cursor_pos + "linestart",
                     str(float(cursor_pos) + 1) + "linestart",
-                )
+                    )
 
             case "find_input":
-
                 text = values["text"]
                 search = values["find_input"].lower()
                 if search != "":
@@ -350,7 +324,6 @@ def main():
                     window["text"].TKText.see(first)
 
             case "find_input_occurrence":
-
                 occ_text = re.split(
                     values["find_input"].lower(),
                     values["text"],
@@ -364,11 +337,11 @@ def main():
                     continue
                 elif current == total:
                     window["counter"].update("1/" + str(total))
-                    window["text"].TKText.see(f"{occ_text[0].count("\n")}.0")
+                    window["text"].TKText.see(f"{occ_text[0].count('\n')}.0")
                 else:
                     window["counter"].update(str(current + 1) + "/" + str(total))
                     window["text"].TKText.see(
-                        f"{sum([x.count("\n") for x in occ_text[:(current + 1)]]) + 2}.0"
+                        f"{sum([x.count('\n') for x in occ_text[:(current + 1)]]) + 2}.0"
                     )
 
             case "close_find" | "find_input_close_find":
@@ -378,34 +351,31 @@ def main():
                 do_highlighting(window, values["text"])
 
             case "Select interpreter":
-
                 interpreter = sg.popup_get_file("Select an interpreter", no_window=True)
                 if interpreter is not None:
                     settings["interpreter"] = interpreter
 
             case "Run file":
+                filename = values["TabGroup"]
+                if filename not in [None, ""]:
 
-                filename = values["listbox"][0]
-                if settings["interpreter"] in [None, ""]:
-                    sg.popup("Please select an interpreter")
-                    continue
-                if filename is None or not filename.endswith(".py"):
-                    sg.popup("Please select a python file to run")
-                    continue
-                window["terminal"].update(visible=True)
-                window["terminal"].update(f"{settings["interpreter"]} {filename}\n")
-                threading.Thread(
-                    target=run,
-                    args=(
-                        settings["interpreter"],
-                        filename,
-                    ),
-                    kwargs={
-                        "start": os.path.dirname(filename),
-                        "element": window["terminal"],
-                    },
-                    daemon=True,
-                ).start()
+                    if settings["interpreter"] in [None, ""]:
+                        sg.popup("Please select an interpreter")
+                        continue
+                    if filename is None or not filename.endswith(".py"):
+                        sg.popup("Please select a python file to run")
+                        continue
+                    window["terminal"].update(visible=True)
+                    window["terminal"].update(f"{settings['interpreter']} {filename}\n")
+                    threading.Thread(
+                        target=run,
+                        kwargs={
+                            "arg": [settings["interpreter"], filename],
+                            "start": os.path.dirname(filename),
+                            "element": window["terminal"],
+                        },
+                        daemon=True,
+                    ).start()
 
             case "Run file in Command Prompt":
                 run([settings["interpreter"], filename], opencommand=True)
@@ -419,7 +389,7 @@ def main():
                     "Select a location to save to", no_window=True, save_as=True
                 )
                 load_from_file(
-                    filename, window, add_to_list=True, highlight=False, update=False
+                    filename, window, add_to_tab=True, highlight=False, update=False
                 )
                 with open(filename, "w") as f:
                     f.write("")
@@ -503,9 +473,9 @@ def main():
             case "Exit editor":
                 break
 
-    # save = sg.popup_yes_no("Do you want to save your changes?", title="Save changes")
-    print(settings)
-    save_settings(window["listbox"].get_list_values(), settings)
+    save_settings(
+        [tab.split("-TAB-")[1][:-1] for tab in window["TabGroup"].tab_list()], settings
+    )
     window.close()
 
 
