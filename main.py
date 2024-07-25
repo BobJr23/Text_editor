@@ -58,7 +58,7 @@ def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, updat
         tab_dict["current_tab"] = (
             list(tab_dict.keys()).index(os.path.basename(filename)) - 1
         )
-    window["path"].update(f"{os.path.dirname(filename)}>")
+    window["path"].update(f"{os.path.dirname(filename).replace('/', "\\")}>")
 
     print(filename)
     return tab_dict
@@ -101,8 +101,8 @@ def main():
     Tab_dict = {"current_tab": 0}
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
-    sg.theme_button_color("#282c34")
-    sg.set_options(font=(FONT, 12))
+
+    sg.set_options(font=(FONT, 11))
 
     layout = [
         [
@@ -168,6 +168,7 @@ def main():
                 size=(190, 20),
                 enable_events=True,
                 # expand_y=True,
+                expand_x=True,
                 pad=(0, 0),
                 rstrip=False,
                 selected_background_color="#404859",
@@ -175,13 +176,14 @@ def main():
         ],
         [
             sg.Button(
-                "----------------------",
+                "-----------Right Click to Extend|Double Left Click to Hide|Drag to Extend/Hide Terminal------------",
                 key="resize",
                 tooltip="Resize",
                 enable_events=True,
                 # size=(0, 1),
                 expand_x=True,
                 pad=(0, 0),
+                button_color=("black", "#282c34"),
             )
         ],
         [
@@ -216,6 +218,7 @@ def main():
     window.bind("<Control-o>", "Open_bind")
     window.bind("<Control-w>", "Close_bind")
     window.bind("<Control-f>", "Find")
+    window.bind("<Control-t>", "New_bind")
     window["find_input"].bind("<Return>", "_occurrence")
     window["find_input"].bind("<Escape>", "_close_find")
     window["terminal_input"].bind("<Return>", "_run")
@@ -227,6 +230,7 @@ def main():
     window["numbers"].bind("<MouseWheel>", "_scroll")
     window["resize"].bind("<B1-Motion>", "_")
     window["resize"].bind("<Button-3>", "_rightclick")
+    window["resize"].bind("<Double-Button-1>", "_double")
     window["text"].Widget.tag_config(
         "normal", foreground=styles["normal"]["text_color"]
     )
@@ -253,6 +257,11 @@ def main():
                 filename = sg.popup_get_file("Select a file", no_window=True)
                 if filename is not None:
                     Tab_dict = load_from_file(filename, window, Tab_dict)
+
+            case "Open folder":
+                folder = sg.popup_get_folder("Select a folder", no_window=True)
+                if folder is not None:
+                    window["path"].update(f"{folder}>")
 
             case "Save" | "Save_bind":
                 with open(filename, "w") as f:
@@ -327,24 +336,23 @@ def main():
                 # print(old, window["text"].Size)
                 # break
                 if window["resize"].user_bind_event.y > 30:
-                    window["text"].set_size((190, old + 1))
-                    window["numbers"].set_size((4, old + 1))
+                    window["text"].set_size((190, old + 5))
+                    window["numbers"].set_size((4, old + 5))
                     print(old)
 
                 elif window["resize"].user_bind_event.y < 0:
                     # new_height = window["text"].Size[1] + window["resize"].user_bind_event.y
-                    window["text"].set_size((190, old - 1))
-                    window["numbers"].set_size((4, old - 1))
+                    window["text"].set_size((190, old + 1))
+                    window["numbers"].set_size((4, old + 1))
 
             case "resize_rightclick":
-                old = window["text"].get_size()[1]
-                print(old)
-                if old == 907:
-                    window["text"].set_size((190, 4))
-                    window["numbers"].set_size((4, 4))
-                else:
-                    window["text"].set_size((190, 43))
-                    window["numbers"].set_size((4, 43))
+
+                window["text"].set_size((190, 4))
+                window["numbers"].set_size((4, 4))
+
+            case "resize_double":
+                window["text"].set_size((190, 48))
+                window["numbers"].set_size((4, 48))
 
             case "find_input":
                 text = values["text"]
@@ -401,7 +409,9 @@ def main():
                     if filename is None or not filename.endswith(".py"):
                         sg.popup("Please select a python file to run")
                         continue
-                    window["terminal"].update(visible=True)
+
+                    window["text"].set_size((190, 4))
+                    window["numbers"].set_size((4, 4))
                     window["terminal"].update(f"{settings['interpreter']} {filename}\n")
                     threading.Thread(
                         target=run,
@@ -419,7 +429,7 @@ def main():
             case "Open Command Prompt":
                 os.system(f"start cmd /k")
 
-            case "New":
+            case "New" | "New_bind":
                 window["text"].update("")
                 filename = sg.popup_get_file(
                     "Select a location to save to", no_window=True, save_as=True
@@ -432,20 +442,28 @@ def main():
                     f.close()
 
             case "terminal_input_run":
-                window["text"].set_size((190, 5))
+
+                window["text"].set_size((190, 4))
+                window["numbers"].set_size((4, 4))
                 window["terminal_input"].update("")
                 window["terminal"].update(
                     values["path"] + values["terminal_input"] + "\n"
                 )
-                threading.Thread(
-                    target=run,
-                    kwargs={
-                        "start": values["path"].split(">")[0],
-                        "element": window["terminal"],
-                        "arg": (values["terminal_input"].split()),
-                    },
-                    daemon=True,
-                ).start()
+                if values["terminal_input"].lstrip().startswith("cd"):
+                    os.chdir(values["path"].split(">")[0])
+                    os.chdir(values["terminal_input"].split("cd")[-1])
+                    window["path"].update(f"{os.getcwd()}>")
+                else:
+                    threading.Thread(
+                        target=run,
+                        kwargs={
+                            "start": values["path"].split(">")[0],
+                            "element": window["terminal"],
+                            "arg": (values["terminal_input"].split()),
+                            "shell": True,
+                        },
+                        daemon=True,
+                    ).start()
 
             case "Choose theme":
                 window.disable()

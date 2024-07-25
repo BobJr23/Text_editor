@@ -2,8 +2,10 @@ import subprocess
 import os
 
 
-def run(arg, element=None, start=os.getcwd(), opencommand=False):
+def run(arg, element=None, start=os.getcwd(), opencommand=False, shell=False):
     print(arg)
+    print(start)
+
     if opencommand:
         os.system(f"start cmd /k {" ".join(arg)}")
     else:
@@ -13,16 +15,20 @@ def run(arg, element=None, start=os.getcwd(), opencommand=False):
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            # shell=True,
+            shell=shell,
         )
 
         if element:
             while True:
                 line = process.stdout.readline()
                 if not line and process.poll() is not None:
+                    linerr = process.stderr.read()
+                    element.update(value=linerr, append=True)
+                    print("broke")
                     break
                 if line:
                     element.update(value=line, append=True)
+
             process.wait()
             # print("Done!")
             element.update(value="\n" + "Process finished", append=True)
@@ -56,4 +62,5 @@ def test_to_cmd():
 
 if __name__ == "__main__":
     # run("date /t".split(), opencommand=True)
-    test_to_cmd()
+    # test_to_cmd()
+    ...
