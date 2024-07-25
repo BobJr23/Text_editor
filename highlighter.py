@@ -9,7 +9,7 @@ patterns = {
     "string": r"(\".*?\"|\'.*?\')",
     "parentheses": r"[()\[\]{}]",
     "function": r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()",
-    "variables": r"def\s+\w+\s*\(([^)]*)\)",
+    # "variables": r"def\s+\w+\s*\(([^)]*)\)",
     "numbers": r"[-+]?\b\d+(?:\.\d*)?(?:[eE][-+]?\d+)?\b",
     "keyword": r"\b(and|as|assert|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|move|nonlocal|not|or|pass|raise|return|True|try|with|while|yield)\b",
 }
@@ -21,7 +21,7 @@ styles = {
     "comment": {"text_color": "#5c6370"},
     "parentheses": {"text_color": "#e8ba36"},
     "function": {"text_color": "#61afef"},
-    "variables": {"text_color": "#c7935f"},
+    # "variables": {"text_color": "#c7935f"},
     "numbers": {"text_color": "#c7935f"},
     "normal": {"text_color": "#a3b1be"},
 }
@@ -43,21 +43,27 @@ def highlight_code(text, find=""):
     compiled_pattern = re.compile(combined_pattern, re.MULTILINE)
 
     for match in compiled_pattern.finditer(text):
-
         start, end = match.span()
         pattern_name = next(name for name, value in match.groupdict().items() if value)
-        if pattern_name == "variables":
-            m = match.group(0)
-            index = m.index("(")
-            for param in m[index + 1 : m.index(")")].split(","):
-                segments.append(
-                    "variables",
-                    start + index + 1,
-                    (start + index + 1 + len(re.split(r":|\s*=", param.strip())[0])),
-                )
-
-            print([])
-            continue
+        # if pattern_name == "variables":
+        #     m = match.group(0)
+        #     index = m.index("(")
+        #     for param in m[index + 1 : m.index(")")].split(","):
+        #         segments.append(
+        #             (
+        #                 "variables",
+        #                 start + index + 1,
+        #                 (
+        #                     start
+        #                     + index
+        #                     + 2
+        #                     + len(re.split(r":|\s*=", param.strip())[0])
+        #                 ),
+        #             )
+        #         )
+        #         index += len(param) + 1
+        #
+        #     continue
         segments.append(
             (
                 pattern_name,
@@ -69,7 +75,8 @@ def highlight_code(text, find=""):
     return segments
 
 
-def do_highlighting(window: sg.Window, input_text, find=""):
+def do_highlighting(window: sg.Window, input_text, find="", cursor_pos="1.0"):
+    cursor_pos = window["text"].Widget.index("insert")
     highlighted_segments = highlight_code(input_text, find)
     t = time.time()
     window["text"].update("")
@@ -78,11 +85,13 @@ def do_highlighting(window: sg.Window, input_text, find=""):
     text_widget.delete("1.0", tk.END)
     text_widget.insert("1.0", input_text)
 
-    for pattern_name in styles:
-        text_widget.tag_config(
-            pattern_name, foreground=styles[pattern_name]["text_color"]
-        )
-    text_widget.tag_config("find", background="orange", foreground="white")
+    window["text"].Widget.tag_remove("current", "1.0", "end")
+    window["text"].Widget.tag_add(
+        "current",
+        cursor_pos + "linestart",
+        str(float(cursor_pos) + 1) + "linestart",
+    )
+
     first = None
     for pattern_name, start, end in highlighted_segments:
         start_idx = f"1.0 + {start}c"
@@ -91,7 +100,7 @@ def do_highlighting(window: sg.Window, input_text, find=""):
         if pattern_name == "find" and first is None:
             first = start_idx
 
-    return input_text.count(find) if find != "" else 0, first
+    return input_text.lower().count(find.lower()) if find != "" else 0, first
 
 
 if __name__ == "__main__":

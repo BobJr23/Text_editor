@@ -1,9 +1,10 @@
 import random
+import time
 
 import PySimpleGUI as sg
 import json
 import re
-from highlighter import do_highlighting
+from highlighter import do_highlighting, styles
 import os
 from run_file import run
 import threading
@@ -92,6 +93,9 @@ def update_lines(window: sg.Window, text: str):
 
 def drag_scroll(event, window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
+
+
+def highlight_line(window: sg.Window, cursor_pos): ...
 
 
 def main():
@@ -213,8 +217,15 @@ def main():
     window["text"].bind("<MouseWheel>", "_scroll")
     window["text"].bind("<Key>", "_text")
     window["text"].vsb.bind("<B1-Motion>", lambda e: drag_scroll(e, window))
+    window["text"].bind("<Button-1>", "_click")
     window["numbers"].bind("<MouseWheel>", "_scroll")
 
+    for pattern_name in styles:
+        window["text"].Widget.tag_config(
+            pattern_name, foreground=styles[pattern_name]["text_color"]
+        )
+    window["text"].Widget.tag_config("find", background="orange", foreground="white")
+    window["text"].Widget.tag_config("current", background="#30343c")
     try:
         for x in settings["open_files"]:
             load_from_file(x, window, update=False, highlight=False)
@@ -288,11 +299,21 @@ def main():
                 update_lines(window, values["text"])
 
             case "text_scroll":
-                scroll_amount = window["text"].TKText.yview()[0]
+
                 update_lines(window, values["text"])
 
             case "numbers_scroll":
                 window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
+
+            case "text_click":
+                scroll_amount = window["text"].TKText.yview()[0]
+                cursor_pos = window["text"].Widget.index("insert")
+                do_highlighting(window, values["text"])
+                window["text"].set_focus()
+                window["text"].Widget.mark_set("insert", cursor_pos)
+                window["text"].TKText.see(cursor_pos)
+                window["text"].TKText.yview_moveto(scroll_amount)
+                # highlight_line(window, window["text"].Widget.index("insert"))
 
             case "find_input":
 
