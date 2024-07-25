@@ -1,5 +1,3 @@
-import random
-import time
 import PySimpleGUI as sg
 import json
 import re
@@ -89,22 +87,18 @@ def load_settings():
 
 def update_lines(window: sg.Window, text: str):
     lines = text.count("\n") + 1
-    window["numbers"].update("\n".join([str(x) for x in range(1, lines + 2)]))
+    window["numbers"].update("\n".join([str(x) for x in range(1, lines + 1)]))
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
-def drag_scroll(event, window):
+def drag_scroll(window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
-
-
-def highlight_line(window: sg.Window, cursor_pos):
-    pass
 
 
 def main():
     filename = None
     settings = load_settings()
-    Tab_dict = {"current_tab": None}
+    Tab_dict = {"current_tab": 0}
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
 
@@ -161,19 +155,19 @@ def main():
             sg.Multiline(
                 default_text="1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
                 key="numbers",
-                size=(4, 0),
+                size=(4, 20),
                 disabled=True,
                 no_scrollbar=True,
-                expand_y=True,
+                # expand_y=True,
                 expand_x=False,
                 pad=(1, 0),
             ),
             sg.Multiline(
                 "Choose a file to begin",
                 key="text",
-                size=(190, 35),
+                size=(190, 20),
                 enable_events=True,
-                expand_y=True,
+                # expand_y=True,
                 pad=(0, 0),
                 rstrip=False,
                 selected_background_color="#404859",
@@ -185,7 +179,7 @@ def main():
                 key="resize",
                 tooltip="Resize",
                 enable_events=True,
-                size=(0, 1),
+                # size=(0, 1),
                 expand_x=True,
                 pad=(0, 0),
             )
@@ -195,6 +189,7 @@ def main():
                 visible=True,
                 key="terminal",
                 default_text="Terminal output",
+                size=(190, 17),
                 expand_x=True,
                 expand_y=True,
                 autoscroll=True,
@@ -226,9 +221,11 @@ def main():
     window["terminal_input"].bind("<Return>", "_run")
     window["text"].bind("<MouseWheel>", "_scroll")
     window["text"].bind("<Key>", "_text")
-    window["text"].vsb.bind("<B1-Motion>", lambda e: drag_scroll(e, window))
+    window["text"].vsb.bind("<B1-Motion>", lambda e: drag_scroll(window))
+    window["text"].vsb.bind("<MouseWheel>", lambda e: drag_scroll(window))
     window["text"].bind("<Button-1>", "_click")
     window["numbers"].bind("<MouseWheel>", "_scroll")
+    window["resize"].bind("<B1-Motion>", "_")
     window["text"].Widget.tag_config(
         "normal", foreground=styles["normal"]["text_color"]
     )
@@ -246,7 +243,7 @@ def main():
         pass
     while True:
         event, values = window.read()
-        print(event, values)
+        # print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -278,7 +275,7 @@ def main():
                 current_tab = Tab_dict["current_tab"]
                 if current_tab:
                     window["TabGroup"].Widget.forget(current_tab)
-                    window["text"].update("")
+                    Tab_dict.pop(list(Tab_dict.keys())[current_tab + 1])
 
             case "TabGroup":
                 try:
@@ -318,9 +315,29 @@ def main():
                 window["text"].Widget.tag_remove("current", "1.0", "end")
                 window["text"].Widget.tag_add(
                     "current",
-                    cursor_pos + "linestart",
-                    str(float(cursor_pos) + 1) + "linestart",
+                    cursor_pos + "line" + "start",
+                    str(float(cursor_pos) + 1) + "line" + "start",
                 )
+
+            case "resize_":
+                old_height = window["text"].Size[1]
+                if window["resize"].user_bind_event.y > 30:
+                    window["terminal"].set_size(
+                        (
+                            190,
+                            window["terminal"].Size[1]
+                            - window["resize"].user_bind_event.y
+                            + 30,
+                        )
+                    )
+                elif window["resize"].user_bind_event.y < 30:
+                    window["terminal"].set_size(
+                        (
+                            190,
+                            window["terminal"].Size[1]
+                            - window["resize"].user_bind_event.y,
+                        )
+                    )
 
             case "find_input":
                 text = values["text"]
@@ -458,8 +475,6 @@ def main():
                 )
                 window2.maximize()
 
-                current_them = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
-                window_bkg = current_them.get("BACKGROUND")
                 while True:
                     event2, values2 = window2.read()
 
