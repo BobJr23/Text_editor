@@ -101,7 +101,7 @@ def main():
     Tab_dict = {"current_tab": 0}
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
-
+    sg.theme_button_color("#282c34")
     sg.set_options(font=(FONT, 12))
 
     layout = [
@@ -175,7 +175,7 @@ def main():
         ],
         [
             sg.Button(
-                ".",
+                "----------------------",
                 key="resize",
                 tooltip="Resize",
                 enable_events=True,
@@ -226,6 +226,7 @@ def main():
     window["text"].bind("<Button-1>", "_click")
     window["numbers"].bind("<MouseWheel>", "_scroll")
     window["resize"].bind("<B1-Motion>", "_")
+    window["resize"].bind("<Button-3>", "_rightclick")
     window["text"].Widget.tag_config(
         "normal", foreground=styles["normal"]["text_color"]
     )
@@ -320,24 +321,30 @@ def main():
                 )
 
             case "resize_":
-                old_height = window["text"].Size[1]
+                # print(window["resize"].user_bind_event)
+
+                old = window["text"].get_size()[1] // 21
+                # print(old, window["text"].Size)
+                # break
                 if window["resize"].user_bind_event.y > 30:
-                    window["terminal"].set_size(
-                        (
-                            190,
-                            window["terminal"].Size[1]
-                            - window["resize"].user_bind_event.y
-                            + 30,
-                        )
-                    )
-                elif window["resize"].user_bind_event.y < 30:
-                    window["terminal"].set_size(
-                        (
-                            190,
-                            window["terminal"].Size[1]
-                            - window["resize"].user_bind_event.y,
-                        )
-                    )
+                    window["text"].set_size((190, old + 1))
+                    window["numbers"].set_size((4, old + 1))
+                    print(old)
+
+                elif window["resize"].user_bind_event.y < 0:
+                    # new_height = window["text"].Size[1] + window["resize"].user_bind_event.y
+                    window["text"].set_size((190, old - 1))
+                    window["numbers"].set_size((4, old - 1))
+
+            case "resize_rightclick":
+                old = window["text"].get_size()[1]
+                print(old)
+                if old == 907:
+                    window["text"].set_size((190, 4))
+                    window["numbers"].set_size((4, 4))
+                else:
+                    window["text"].set_size((190, 43))
+                    window["numbers"].set_size((4, 43))
 
             case "find_input":
                 text = values["text"]
