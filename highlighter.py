@@ -27,16 +27,21 @@ styles = {
 }
 
 
-def highlight_code(text, find=""):
+def highlight_code(text, find="", find_case=False):
     segments = []
     if find != "":
-
-        comp = re.compile(re.escape(find), re.MULTILINE | re.IGNORECASE)
+        if find_case:
+            comp = re.compile(re.escape(find), re.MULTILINE)
+            print(find)
+            print("ignoring")
+            print(text)
+        else:
+            comp = re.compile(re.escape(find), re.MULTILINE | re.IGNORECASE)
 
         for match in comp.finditer(text):
             start, end = match.span()
             segments.append(("find", start, end))
-
+        print(segments)
     combined_pattern = "|".join(
         f"(?P<{name}>{pattern})" for name, pattern in patterns.items()
     )
@@ -57,8 +62,8 @@ def highlight_code(text, find=""):
     return segments
 
 
-def do_highlighting(window: sg.Window, input_text, find=""):
-    highlighted_segments = highlight_code(input_text, find)
+def do_highlighting(window: sg.Window, input_text, find="", find_case=False):
+    highlighted_segments = highlight_code(input_text, find, find_case)
 
     text_widget = window["text"].Widget
     text_widget.delete("1.0", tk.END)
@@ -72,10 +77,15 @@ def do_highlighting(window: sg.Window, input_text, find=""):
         text_widget.tag_add(pattern_name, start_idx, end_idx)
         if pattern_name == "find" and first is None:
             first = start_idx
+    if find_case:
+        return input_text.count(find) if find != "" else 0, first
     return input_text.lower().count(find.lower()) if find != "" else 0, first
 
 
 if __name__ == "__main__":
-    highlight_code(
-        r"import time\n\nfor x in range(30):\n    print(x)\n    time.sleep(0.05)"
+    p = highlight_code(
+        r"import time\n\nfor x in range(30):\n    print(x)\n    time.sleep(0.05)",
+        find="Tim",
+        find_case=True,
     )
+    print(p)

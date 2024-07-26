@@ -142,6 +142,7 @@ def main():
     sg.theme_input_background_color("#282c34")
     sg.set_options(font=(FONT, 11))
     save_folder = None
+    find_case = False
     if settings["save_folder"] is not None:
         tree_data = recurse_folder(settings["save_folder"])
         save_folder = settings["save_folder"]
@@ -184,6 +185,14 @@ def main():
             sg.TabGroup([[]], key="TabGroup", enable_events=True, expand_x=True),
             sg.Input(
                 visible=False, enable_events=True, key="find_input", tooltip="Find"
+            ),
+            sg.Button(
+                button_text="Aa",
+                visible=False,
+                key="case",
+                font=(FONT, 6),
+                size=(2, 2),
+                pad=(0, 0),
             ),
             sg.Button(
                 button_text="x",
@@ -384,10 +393,27 @@ def main():
 
             case "Find":
                 window["find_input"].update(visible=True)
+                window["case"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
 
+            case "case":
+                find_case = not find_case
+                text = values["text"]
+                if find_case:
+                    search = values["find_input"]
+                else:
+                    search = values["find_input"].lower()
+                if search != "":
+                    count, first = do_highlighting(window, text, search, find_case)
+                else:
+                    count, first = do_highlighting(window, text)
+                if count == 0:
+                    window["counter"].update("0/0")
+                else:
+                    window["counter"].update("1/" + str(count))
+                    window["text"].TKText.see(first)
             case "text_text":
                 cursor_pos = window["text"].Widget.index("insert")
                 do_highlighting(window, values["text"], values["find_input"])
@@ -428,9 +454,12 @@ def main():
 
             case "find_input":
                 text = values["text"]
-                search = values["find_input"].lower()
+                if find_case:
+                    search = values["find_input"]
+                else:
+                    search = values["find_input"].lower()
                 if search != "":
-                    count, first = do_highlighting(window, text, search)
+                    count, first = do_highlighting(window, text, search, find_case)
                 else:
                     count, first = do_highlighting(window, text)
                 if count == 0:
@@ -464,6 +493,7 @@ def main():
                 window["find_input"].update(visible=False)
                 window["counter"].update(visible=False)
                 window["close_find"].update(visible=False)
+                window["case"].update(visible=False)
                 do_highlighting(window, values["text"])
 
             case "Select interpreter":
