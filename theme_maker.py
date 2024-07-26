@@ -5,6 +5,10 @@ def rgb_to_hex(r, g, b):
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 
+def hex_to_rgb(hex_color):
+    return tuple(int(hex_color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+
+
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
     if selected_theme is None:
@@ -98,7 +102,11 @@ def create_theme_customizer():
     current_theme = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
 
     layout = [
-        [sg.Text("Background Color")],
+        [
+            sg.Text(
+                "Background Color\n               RED                                        GREEN                                         BLUE"
+            )
+        ],
         [
             sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-BG_R-"),
             sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-BG_G-"),
@@ -128,9 +136,22 @@ def create_theme_customizer():
     ]
 
     window = sg.Window("Theme Customizer", layout, finalize=True)
+    bg_color = hex_to_rgb(current_theme["BACKGROUND"])
+    text_color = hex_to_rgb(current_theme["TEXT"])
+    highlight_color = hex_to_rgb(current_theme["BUTTON"][1])
+    window["-BG_R-"].update(bg_color[0])
+    window["-BG_G-"].update(bg_color[1])
+    window["-BG_B-"].update(bg_color[2])
 
+    window["-TEXT_R-"].update(text_color[0])
+    window["-TEXT_G-"].update(text_color[1])
+    window["-TEXT_B-"].update(text_color[2])
+
+    window["-HL_R-"].update(highlight_color[0])
+    window["-HL_G-"].update(highlight_color[1])
+    window["-HL_B-"].update(highlight_color[2])
     while True:
-        event, values = window.read()
+        event, values = window.read(timeout=100)
 
         if event in (sg.WINDOW_CLOSED, "Cancel"):
             break
@@ -176,8 +197,14 @@ def create_theme_customizer():
             background_color=bg_color,
             text_color=text_color,
         )
+    window.close()
+    return window
 
 
 if __name__ == "__main__":
     create_theme_customizer()
+    print(sg.theme_background_color())
+    print(sg.theme_text_color())
+    print(sg.theme_button_color())
+    print(sg.theme_input_background_color())
     # theme_selector()
