@@ -64,7 +64,7 @@ def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, updat
     return tab_dict
 
 
-def save_settings(open_files, settings):
+def save_settings(open_files, settings, folder):
     with open("settings.json", "w") as f:
         f.write(
             json.dumps(
@@ -72,6 +72,7 @@ def save_settings(open_files, settings):
                     "theme": sg.theme(),
                     "open_files": open_files,
                     "interpreter": settings["interpreter"],
+                    "save_folder": folder,
                 }
             )
         )
@@ -95,6 +96,21 @@ def drag_scroll(window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
+def recurse_folder(folder, tree_data=sg.TreeData()):
+
+    tree_data.insert("", folder, folder.split("/")[-1] + " - " + folder, [])
+    for file in os.listdir(folder):
+        if os.path.isfile(file):
+            tree_data.insert(folder, file, file, [])
+    for root, _, files in os.walk(folder):
+        if root != folder:
+            tree_data.insert(folder, root, root.split("\\")[-1], [])
+            for file in files:
+                tree_data.insert(root, file, file, [])
+
+    return tree_data
+
+
 def main():
     filename = None
     settings = load_settings()
@@ -103,12 +119,10 @@ def main():
     sg.theme_input_background_color("#282c34")
     sg.set_options(font=(FONT, 11))
     tree_data = sg.TreeData()
-
-    tree_data.insert("", "root", "Root", ["Root Folder"])
-    tree_data.insert("root", "folder1", "Folder 1", ["Subfolder 1"])
-    tree_data.insert("folder1", "file1", "File 1", ["File 1 Description"])
-    tree_data.insert("root", "folder2", "Folder 2", ["Subfolder 2"])
-    tree_data.insert("folder2", "file2", "File 2", ["File 2 Description"])
+    save_folder = None
+    tree_data.insert("", "root", "Root", [])
+    tree_data.insert("root", "folder1", "Folder 1", [])
+    tree_data.insert("folder1", "file1", "File 1adfasdfasdfasdf", [])
 
     layout = [
         [
@@ -162,11 +176,15 @@ def main():
             sg.Tree(
                 tree_data,
                 key="folders",
-                headings=["Folders"],
-                auto_size_columns=True,
+                headings=[],
+                col0_heading="---Folders---",
                 num_rows=20,
-                show_expanded=False,
+                expand_x=True,
+                auto_size_columns=True,
+                show_expanded=True,
                 enable_events=True,
+                selected_row_colors=("white", "#61afef"),
+                hide_vertical_scroll=True,
             ),
             sg.Multiline(
                 default_text="1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
@@ -181,7 +199,7 @@ def main():
             sg.Multiline(
                 "Choose a file to begin",
                 key="text",
-                size=(190, 20),
+                size=(100, 20),
                 enable_events=True,
                 # expand_y=True,
                 expand_x=True,
@@ -260,11 +278,13 @@ def main():
     try:
         for x in settings["open_files"]:
             Tab_dict = load_from_file(x, window, Tab_dict, update=False)
+        recurse_folder(settings["save_folder"])
     except KeyError:
         pass
+
     while True:
         event, values = window.read()
-        # print(event, values)
+        print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -277,13 +297,12 @@ def main():
             case "Open folder":
                 folder = sg.popup_get_folder("Select a folder", no_window=True)
                 if folder is not None:
-                    tree_data = sg.TreeData()
-                    window["path"].update(f"{folder.replace("/","\\")}>")
-                    tree_data.insert("", "root", "Root", ["Root Folder"])
-                    for file in os.listdir(folder):
-                        tree_data.insert("root", file, file, [file])
-                    window["folders"].update(values=tree_data)
 
+                    window["path"].update(f"{folder.replace("/","\\")}>")
+                    # tree_data.insert("", "root", folder, ["Testtext"])
+                    tree_data = recurse_folder(folder)
+                    window["folders"].update(values=tree_data)
+                    save_folder = folder
             case "Save" | "Save_bind":
                 with open(filename, "w") as f:
                     f.write(values["text"])
@@ -546,7 +565,11 @@ def main():
             case "Exit editor":
                 break
 
-    save_settings([tab for tab in Tab_dict.values() if isinstance(tab, str)], settings)
+    save_settings(
+        [tab for tab in Tab_dict.values() if isinstance(tab, str)],
+        settings,
+        save_folder,
+    )
     window.close()
 
 
