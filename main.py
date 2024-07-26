@@ -60,7 +60,6 @@ def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, updat
         )
     window["path"].update(f"{os.path.dirname(filename).replace('/', "\\")}>")
 
-    print(filename)
     return tab_dict
 
 
@@ -96,14 +95,20 @@ def drag_scroll(window):
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
 
+def resize_top(window: sg.Window, y):
+    window["text"].set_size((MULTILINE_WIDTH, y))
+    window["numbers"].set_size((4, y))
+    window["folders"].set_size((1, y))
+
+
 def recurse_folder(folder, tree_data=sg.TreeData()):
-    print(folder)
     tree_data.insert(
         "", folder, folder.split("/")[-1] + " - " + folder, [], icon="folder.png"
     )
-    # for file in os.listdir(folder):
-    #     if os.path.isfile(file):
-    #         tree_data.insert(folder, file, file, [])
+    for file in os.listdir(folder):
+        print(folder + "/" + file)
+        if os.path.isfile(folder + "/" + file):
+            tree_data.insert(folder, file, file, [])
     for root, _, files in os.walk(folder):
         if root != folder:
             tree_data.insert(
@@ -192,8 +197,8 @@ def main():
                 headings=[],
                 col0_heading="---Folders---",
                 num_rows=20,
-                expand_x=True,
-                auto_size_columns=True,
+                col0_width=40,
+                expand_x=False,
                 show_expanded=True,
                 enable_events=True,
                 selected_row_colors=("white", "#61afef"),
@@ -212,7 +217,7 @@ def main():
             sg.Multiline(
                 "Choose a file to begin",
                 key="text",
-                size=(100, 20),
+                size=(MULTILINE_WIDTH, 20),
                 enable_events=True,
                 # expand_y=True,
                 expand_x=True,
@@ -312,7 +317,6 @@ def main():
                 if folder is not None:
 
                     window["path"].update(f"{folder.replace("/","\\")}>")
-                    # tree_data.insert("", "root", folder, ["Testtext"])
                     tree_data = recurse_folder(folder)
                     window["folders"].update(values=tree_data)
                     save_folder = folder
@@ -339,6 +343,10 @@ def main():
                 if current_tab:
                     window["TabGroup"].Widget.forget(current_tab)
                     Tab_dict.pop(list(Tab_dict.keys())[current_tab + 1])
+
+            case "folders":
+                if "/" in values["folders"][0] or "\\" in values["folders"][0]:
+                    print(values["folders"][0])
 
             case "TabGroup":
                 try:
@@ -388,23 +396,16 @@ def main():
 
                 # break
                 if window["resize"].user_bind_event.y > 30:
-                    window["text"].set_size((190, old + 5))
-                    window["numbers"].set_size((4, old + 5))
-                    print(old)
+                    resize_top(window, old + 5)
 
                 elif window["resize"].user_bind_event.y < 0:
-
-                    window["text"].set_size((190, old + 1))
-                    window["numbers"].set_size((4, old + 1))
-
-            case "resize_rightclick":
-
-                window["text"].set_size((190, 4))
-                window["numbers"].set_size((4, 4))
+                    resize_top(window, old + 1)
 
             case "resize_double":
-                window["text"].set_size((190, 48))
-                window["numbers"].set_size((4, 48))
+                resize_top(window, 4)
+
+            case "resize_rightclick":
+                resize_top(window, 46)
 
             case "find_input":
                 text = values["text"]
@@ -462,8 +463,7 @@ def main():
                         sg.popup("Please select a python file to run")
                         continue
 
-                    window["text"].set_size((190, 4))
-                    window["numbers"].set_size((4, 4))
+                    resize_top(window, 4)
                     window["terminal"].update(f"{settings['interpreter']} {filename}\n")
                     threading.Thread(
                         target=run,
@@ -495,8 +495,7 @@ def main():
 
             case "terminal_input_run":
 
-                window["text"].set_size((190, 4))
-                window["numbers"].set_size((4, 4))
+                resize_top(window, 4)
                 window["terminal_input"].update("")
                 window["terminal"].update(
                     values["path"] + values["terminal_input"] + "\n"
@@ -576,7 +575,7 @@ def main():
                 update_theme(window, theme)
             case "Exit editor":
                 break
-
+    print(save_folder)
     save_settings(
         [tab for tab in Tab_dict.values() if isinstance(tab, str)],
         settings,
@@ -587,4 +586,5 @@ def main():
 
 if __name__ == "__main__":
     FONT = "Jetbrains Mono"
+    MULTILINE_WIDTH = 150
     main()
