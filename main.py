@@ -47,7 +47,7 @@ def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, updat
             f.close()
         update_lines(window, text)
 
-    if add_to_tab:
+    if add_to_tab and filename not in tab_dict.values():
         window["TabGroup"].add_tab(
             sg.Tab(title=os.path.basename(filename), layout=[[]])
         )
@@ -101,8 +101,14 @@ def main():
     Tab_dict = {"current_tab": 0}
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
-
     sg.set_options(font=(FONT, 11))
+    tree_data = sg.TreeData()
+
+    tree_data.insert("", "root", "Root", ["Root Folder"])
+    tree_data.insert("root", "folder1", "Folder 1", ["Subfolder 1"])
+    tree_data.insert("folder1", "file1", "File 1", ["File 1 Description"])
+    tree_data.insert("root", "folder2", "Folder 2", ["Subfolder 2"])
+    tree_data.insert("folder2", "file2", "File 2", ["File 2 Description"])
 
     layout = [
         [
@@ -115,8 +121,9 @@ def main():
                             "Save",
                             "Save As",
                             "Close file",
-                            "---",
                             "New",
+                            "---",
+                            "Open folder",
                             "---",
                             "Exit editor",
                         ],
@@ -152,6 +159,15 @@ def main():
             sg.Text("0", visible=False, key="counter"),
         ],
         [
+            sg.Tree(
+                tree_data,
+                key="folders",
+                headings=["Folders"],
+                auto_size_columns=True,
+                num_rows=20,
+                show_expanded=False,
+                enable_events=True,
+            ),
             sg.Multiline(
                 default_text="1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
                 key="numbers",
@@ -261,7 +277,12 @@ def main():
             case "Open folder":
                 folder = sg.popup_get_folder("Select a folder", no_window=True)
                 if folder is not None:
-                    window["path"].update(f"{folder}>")
+                    tree_data = sg.TreeData()
+                    window["path"].update(f"{folder.replace("/","\\")}>")
+                    tree_data.insert("", "root", "Root", ["Root Folder"])
+                    for file in os.listdir(folder):
+                        tree_data.insert("root", file, file, [file])
+                    window["folders"].update(values=tree_data)
 
             case "Save" | "Save_bind":
                 with open(filename, "w") as f:
