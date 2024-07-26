@@ -97,16 +97,30 @@ def drag_scroll(window):
 
 
 def recurse_folder(folder, tree_data=sg.TreeData()):
-
-    tree_data.insert("", folder, folder.split("/")[-1] + " - " + folder, [])
-    for file in os.listdir(folder):
-        if os.path.isfile(file):
-            tree_data.insert(folder, file, file, [])
+    print(folder)
+    tree_data.insert(
+        "", folder, folder.split("/")[-1] + " - " + folder, [], icon="folder.png"
+    )
+    # for file in os.listdir(folder):
+    #     if os.path.isfile(file):
+    #         tree_data.insert(folder, file, file, [])
     for root, _, files in os.walk(folder):
         if root != folder:
-            tree_data.insert(folder, root, root.split("\\")[-1], [])
+            tree_data.insert(
+                os.path.dirname(root),
+                root,
+                " " + root.split("\\")[-1],
+                [],
+                icon="folder.png",
+            )
             for file in files:
-                tree_data.insert(root, file, file, [])
+                tree_data.insert(
+                    root,
+                    file,
+                    " " + file,
+                    [],
+                    icon=("python.png" if file.endswith(".py") else "file.png"),
+                )
 
     return tree_data
 
@@ -118,12 +132,11 @@ def main():
     sg.theme(settings["theme"])
     sg.theme_input_background_color("#282c34")
     sg.set_options(font=(FONT, 11))
-    tree_data = sg.TreeData()
     save_folder = None
-    tree_data.insert("", "root", "Root", [])
-    tree_data.insert("root", "folder1", "Folder 1", [])
-    tree_data.insert("folder1", "file1", "File 1adfasdfasdfasdf", [])
-
+    if settings["save_folder"] is not None:
+        tree_data = recurse_folder(settings["save_folder"])
+    else:
+        tree_data = sg.TreeData()
     layout = [
         [
             sg.Menu(
@@ -278,7 +291,7 @@ def main():
     try:
         for x in settings["open_files"]:
             Tab_dict = load_from_file(x, window, Tab_dict, update=False)
-        recurse_folder(settings["save_folder"])
+
     except KeyError:
         pass
 
@@ -370,10 +383,9 @@ def main():
                 )
 
             case "resize_":
-                # print(window["resize"].user_bind_event)
 
                 old = window["text"].get_size()[1] // 21
-                # print(old, window["text"].Size)
+
                 # break
                 if window["resize"].user_bind_event.y > 30:
                     window["text"].set_size((190, old + 5))
@@ -381,7 +393,7 @@ def main():
                     print(old)
 
                 elif window["resize"].user_bind_event.y < 0:
-                    # new_height = window["text"].Size[1] + window["resize"].user_bind_event.y
+
                     window["text"].set_size((190, old + 1))
                     window["numbers"].set_size((4, old + 1))
 
