@@ -140,6 +140,7 @@ def main():
     save_folder = None
     if settings["save_folder"] is not None:
         tree_data = recurse_folder(settings["save_folder"])
+        save_folder = settings["save_folder"]
     else:
         tree_data = sg.TreeData()
     layout = [
@@ -319,8 +320,10 @@ def main():
                     window["path"].update(f"{folder.replace("/","\\")}>")
                     tree_data = recurse_folder(folder)
                     window["folders"].update(values=tree_data)
+
                     save_folder = folder
             case "Save" | "Save_bind":
+                print("saving" + filename)
                 with open(filename, "w") as f:
                     f.write(values["text"])
                     f.close()
@@ -345,17 +348,30 @@ def main():
                     Tab_dict.pop(list(Tab_dict.keys())[current_tab + 1])
 
             case "folders":
-                if "/" in values["folders"][0] or "\\" in values["folders"][0]:
-                    print(values["folders"][0])
+                if not ("/" in values["folders"][0] or "\\" in values["folders"][0]):
+                    filename = (
+                        window["folders"]
+                        .TreeData.tree_dict[values["folders"][0]]
+                        .parent
+                        + "/"
+                        + values["folders"][0]
+                    )
+                    load_from_file(
+                        filename,
+                        window,
+                        tab_dict=Tab_dict,
+                        add_to_tab=True,
+                        update=True,
+                    )
 
             case "TabGroup":
                 try:
-                    filename = values["TabGroup"]
+                    filename = values["path"][:-1] + "\\" + values["TabGroup"]
                 except IndexError:
                     print("index error")
                     continue
                 Tab_dict = load_from_file(
-                    Tab_dict[filename], window, Tab_dict, add_to_tab=False
+                    Tab_dict[values["TabGroup"]], window, Tab_dict, add_to_tab=False
                 )
                 window["text"].TKText.see("1.0")
 
@@ -368,7 +384,7 @@ def main():
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
 
-            case "text":
+            case "text_text":
                 cursor_pos = window["text"].Widget.index("insert")
                 do_highlighting(window, values["text"], values["find_input"])
                 window["text"].set_focus()
@@ -389,6 +405,9 @@ def main():
                     cursor_pos + "line" + "start",
                     str(float(cursor_pos) + 1) + "line" + "start",
                 )
+
+            # case "text_text":
+            #     do_highlighting(window, values["text"], values["find_input"])
 
             case "resize_":
 
