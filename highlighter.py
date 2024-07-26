@@ -57,15 +57,13 @@ def highlight_code(text, find=""):
     return segments
 
 
-def do_highlighting(window: sg.Window, input_text, find="", cursor_pos="1.0"):
-
+def do_highlighting(window: sg.Window, input_text, find=""):
     highlighted_segments = highlight_code(input_text, find)
-    t = time.time()
-    # window["text"].update("")
 
     text_widget = window["text"].Widget
     text_widget.delete("1.0", tk.END)
-    text_widget.insert("1.0", input_text)
+    text_widget.insert("1.0", input_text[:-1])
+
     text_widget.tag_add("normal", "1.0", tk.END)
     first = None
     for pattern_name, start, end in highlighted_segments:
@@ -74,7 +72,6 @@ def do_highlighting(window: sg.Window, input_text, find="", cursor_pos="1.0"):
         text_widget.tag_add(pattern_name, start_idx, end_idx)
         if pattern_name == "find" and first is None:
             first = start_idx
-
     return input_text.lower().count(find.lower()) if find != "" else 0, first
 
 

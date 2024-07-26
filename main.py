@@ -86,7 +86,7 @@ def load_settings():
 
 
 def update_lines(window: sg.Window, text: str):
-    lines = text.count("\n") + 1
+    lines = text.count("\n")
     window["numbers"].update("\n".join([str(x) for x in range(1, lines + 1)]))
     window["numbers"].TKText.yview_moveto(window["text"].TKText.yview()[0])
 
@@ -103,7 +103,11 @@ def resize_top(window: sg.Window, y):
 
 def recurse_folder(folder, tree_data=sg.TreeData()):
     tree_data.insert(
-        "", folder, folder.split("/")[-1] + " - " + folder, [], icon="folder.png"
+        "",
+        folder,
+        folder.split("/")[-1] + " - " + (folder[-28:] if len(folder) > 27 else folder),
+        [],
+        icon="folder.png",
     )
     for file in os.listdir(folder):
         print(folder + "/" + file)
@@ -200,7 +204,6 @@ def main():
                 num_rows=20,
                 col0_width=40,
                 expand_x=False,
-                show_expanded=True,
                 enable_events=True,
                 selected_row_colors=("white", "#61afef"),
                 hide_vertical_scroll=True,
@@ -229,7 +232,7 @@ def main():
         ],
         [
             sg.Button(
-                "-----------Right Click to Extend|Double Left Click to Hide|Drag to Extend/Hide Terminal------------",
+                "-----------Right Click to Hide | Double Left Click to Show | Drag to Extend/Hide Terminal------------",
                 key="resize",
                 tooltip="Resize",
                 enable_events=True,
@@ -237,6 +240,7 @@ def main():
                 expand_x=True,
                 pad=(0, 0),
                 button_color=("black", "#282c34"),
+                # font=(FONT, 6),
             )
         ],
         [
@@ -391,12 +395,6 @@ def main():
                 window["text"].Widget.mark_set("insert", cursor_pos)
                 update_lines(window, values["text"])
 
-            case "text_scroll":
-                update_lines(window, values["text"])
-
-            case "numbers_scroll":
-                window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
-
             case "text_click":
                 cursor_pos = window["text"].Widget.index("insert")
                 window["text"].Widget.tag_remove("current", "1.0", "end")
@@ -405,9 +403,11 @@ def main():
                     cursor_pos + "line" + "start",
                     str(float(cursor_pos) + 1) + "line" + "start",
                 )
+            case "text_scroll":
+                update_lines(window, values["text"])
 
-            # case "text_text":
-            #     do_highlighting(window, values["text"], values["find_input"])
+            case "numbers_scroll":
+                window["text"].TKText.yview_moveto(window["numbers"].TKText.yview()[0])
 
             case "resize_":
 
