@@ -1,6 +1,10 @@
 import PySimpleGUI as sg
 
 
+def rgb_to_hex(r, g, b):
+    return "#{:02x}{:02x}{:02x}".format(r, g, b)
+
+
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
     if selected_theme is None:
@@ -89,6 +93,7 @@ def theme_selector(window):
     window.enable()
     update_theme(window, theme)
 
+
 def create_theme_customizer():
     current_theme = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
 
@@ -123,3 +128,56 @@ def create_theme_customizer():
     ]
 
     window = sg.Window("Theme Customizer", layout, finalize=True)
+
+    while True:
+        event, values = window.read()
+
+        if event in (sg.WINDOW_CLOSED, "Cancel"):
+            break
+
+        if event == "Apply":
+            new_theme = {
+                "BACKGROUND": rgb_to_hex(
+                    int(values["-BG_R-"]), int(values["-BG_G-"]), int(values["-BG_B-"])
+                ),
+                "TEXT": rgb_to_hex(
+                    int(values["-TEXT_R-"]),
+                    int(values["-TEXT_G-"]),
+                    int(values["-TEXT_B-"]),
+                ),
+                "BUTTON": (
+                    rgb_to_hex(
+                        int(values["-TEXT_R-"]),
+                        int(values["-TEXT_G-"]),
+                        int(values["-TEXT_B-"]),
+                    ),
+                    rgb_to_hex(
+                        int(values["-HL_R-"]),
+                        int(values["-HL_G-"]),
+                        int(values["-HL_B-"]),
+                    ),
+                ),
+            }
+            sg.LOOK_AND_FEEL_TABLE["CustomTheme"] = new_theme
+            sg.theme("CustomTheme")
+            sg.popup("Theme applied successfully!")
+
+        bg_color = rgb_to_hex(
+            int(values["-BG_R-"]), int(values["-BG_G-"]), int(values["-BG_B-"])
+        )
+        text_color = rgb_to_hex(
+            int(values["-TEXT_R-"]), int(values["-TEXT_G-"]), int(values["-TEXT_B-"])
+        )
+        highlight_color = rgb_to_hex(
+            int(values["-HL_R-"]), int(values["-HL_G-"]), int(values["-HL_B-"])
+        )
+
+        window["-PREVIEW-"].update(
+            background_color=bg_color,
+            text_color=text_color,
+        )
+
+
+if __name__ == "__main__":
+    create_theme_customizer()
+    # theme_selector()

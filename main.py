@@ -1,11 +1,10 @@
-# import PySimpleGUI as sg
 import json
 import re
 from highlighter import do_highlighting, styles
 import os
 from run_file import run
 import threading
-from theme_maker import theme_selector, sg
+from theme_maker import theme_selector, sg, create_theme_customizer
 
 
 def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, update=True):
@@ -537,7 +536,8 @@ def main():
                     ).start()
 
             case "Choose theme":
-                theme_selector(window)
+                create_theme_customizer()
+                # theme_selector(window)
             case "Exit editor":
                 break
     print(save_folder)
