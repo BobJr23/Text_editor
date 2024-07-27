@@ -40,7 +40,7 @@ def get_color_from_sliders(values, key_prefix):
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
-def update_theme(window: sg.Window, selected_theme):
+def update_theme(window: sg.Window, selected_theme=sg.theme()):
     if selected_theme is None:
         return
     current_them = sg.LOOK_AND_FEEL_TABLE[selected_theme]
@@ -128,7 +128,7 @@ def theme_selector(window):
     update_theme(window, theme)
 
 
-def create_theme_customizer():
+def create_theme_customizer(w):
     current_theme = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
 
     layout = [
@@ -174,7 +174,7 @@ def create_theme_customizer():
     print(current_theme)
     current_theme["BACKGROUND"] = sg.theme_background_color()
     current_theme["TEXT"] = sg.theme_text_color()
-    current_theme["BUTTON"] = (sg.theme_button_color(), sg.theme_button_color_text())
+    current_theme["BUTTON"] = sg.theme_button_color()
     current_theme["INPUT"] = sg.theme_input_background_color()
     current_theme["TEXT_INPUT"] = sg.theme_input_text_color()
 
@@ -203,9 +203,13 @@ def create_theme_customizer():
                     get_color_from_sliders(values, "BUTTON_TEXT"),
                     get_color_from_sliders(values, "BUTTON"),
                 ),
+                "PROGRESS": ["#fafaf8", "#335267"],
+                "BORDER": 1,
+                "SLIDER_DEPTH": 0,
+                "PROGRESS_DEPTH": 0,
             }
-            sg.LOOK_AND_FEEL_TABLE["CustomTheme"] = new_theme
-            sg.theme("CustomTheme")
+            print(new_theme)
+            sg.LOOK_AND_FEEL_TABLE[sg.theme()] = new_theme
             sg.popup("Theme applied successfully!")
 
         bg_color = get_color_from_sliders(values, "BG")
@@ -233,8 +237,9 @@ def create_theme_customizer():
             button_color=(button_text_color, button_color)
         )
         window.TKroot.config(background=bg_color)
-
+    update_theme(window)
     window.close()
+
     return current_theme, cursor_color, highlight_color
 
 

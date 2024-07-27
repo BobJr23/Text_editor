@@ -108,6 +108,7 @@ def main():
     filename = None
     settings = load_settings()
     Tab_dict = {"current_tab": 0}
+    print(settings["custom_theme"])
     sg.LOOK_AND_FEEL_TABLE[settings["theme"]] = settings["custom_theme"]
     sg.theme(settings["theme"])
 
@@ -545,7 +546,7 @@ def main():
             case "Choose built-in theme":
                 theme_selector(window)
             case "Customize theme":
-                create_theme_customizer()
+                create_theme_customizer(window)
             case "Exit editor":
                 break
     print(save_folder)
