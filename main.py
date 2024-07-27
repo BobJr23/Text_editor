@@ -72,6 +72,38 @@ def resize_top(window: sg.Window, y):
     window["folders"].set_size((1, y))
 
 
+def find_and_replace(window, v):
+    layout = [
+        [sg.Text("Find:"), sg.Input(key="-FIND-", default_text=v["find_input"])],
+        [sg.Text("Replace:"), sg.Input(key="-REPLACE-")],
+        [sg.Checkbox("Match case", key="-MATCH_CASE-")],
+        [sg.Checkbox("Whole word", key="-WHOLE_WORD-")],
+        [
+            sg.Button("Find"),
+            sg.Button("Replace"),
+            sg.Button("Replace All"),
+            sg.Button("Close"),
+        ],
+    ]
+
+    search_window = sg.Window("Search and Replace", layout, modal=True)
+
+    text_widget = window["text"].Widget
+
+    while True:
+        event, values = search_window.read()
+
+        if event in (sg.WINDOW_CLOSED, "Close"):
+            break
+
+        find_text = values["-FIND-"]
+        replace_text = values["-REPLACE-"]
+        match_case = values["-MATCH_CASE-"]
+        whole_word = values["-WHOLE_WORD-"]
+
+    search_window.close()
+
+
 def recurse_folder(folder, tree_data=sg.TreeData()):
     tree_data.insert(
         "",
@@ -180,6 +212,7 @@ def main():
                 size=(2, 2),
                 pad=(0, 0),
             ),
+            sg.Button("Replace", visible=False, key="replace"),
             sg.Text("0", visible=False, key="counter"),
         ],
         [
@@ -369,12 +402,13 @@ def main():
             case "Find":
                 window["find_input"].update(visible=True)
                 window["case"].update(visible=True)
+                window["replace"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
 
-            case "Find and Replace":
-
+            case "Find and Replace" | "replace":
+                find_and_replace(window, values)
 
             case "case":
                 find_case = not find_case
@@ -470,6 +504,7 @@ def main():
             case "close_find" | "find_input_close_find":
                 window["find_input"].update(visible=False)
                 window["counter"].update(visible=False)
+                window["replace"].update(visible=True)
                 window["close_find"].update(visible=False)
                 window["case"].update(visible=False)
                 do_highlighting(window, values["text"])
