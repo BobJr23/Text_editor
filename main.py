@@ -1,6 +1,6 @@
 import json
 import re
-from highlighter import do_highlighting, styles
+from highlighter import do_highlighting, styles, tk
 import os
 from run_file import run
 import threading
@@ -72,6 +72,34 @@ def resize_top(window: sg.Window, y):
     window["folders"].set_size((1, y))
 
 
+def find_text(text_widget, find_text, match_case, whole_word):
+    start_pos = text_widget.index(tk.INSERT)
+    if not match_case:
+        find_text = find_text.lower()
+
+    while True:
+        start_pos = text_widget.search(
+            find_text, start_pos, tk.END, nocase=not match_case, regexp=whole_word
+        )
+        if not start_pos:
+            break
+        end_pos = f"{start_pos}+{len(find_text)}c"
+        if whole_word:
+            if not (
+                text_widget.get(f"{start_pos}-1c").isspace()
+                and text_widget.get(end_pos).isspace()
+            ):
+                start_pos = end_pos
+                continue
+        text_widget.tag_add("search", start_pos, end_pos)
+        text_widget.tag_config("search", background="yellow")
+        text_widget.mark_set(tk.INSERT, end_pos)
+        text_widget.see(tk.INSERT)
+        start_pos = end_pos
+        return True
+    return False
+
+
 def find_and_replace(window, v):
     layout = [
         [sg.Text("Find:"), sg.Input(key="-FIND-", default_text=v["find_input"])],
@@ -96,10 +124,20 @@ def find_and_replace(window, v):
         if event in (sg.WINDOW_CLOSED, "Close"):
             break
 
-        find_text = values["-FIND-"]
+        find = values["-FIND-"]
         replace_text = values["-REPLACE-"]
         match_case = values["-MATCH_CASE-"]
         whole_word = values["-WHOLE_WORD-"]
+
+        if event == "Find":
+            text_widget.tag_remove("search", "1.0", tk.END)
+            find_text(text_widget, find, match_case, whole_word)
+
+        elif event == "Replace":
+            if text_widget.tag_ranges("sel"):
+                text_widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                text_widget.insert(tk.INSERT, replace_text)
+            find_text(text_widget, find, match_case, whole_word)
 
     search_window.close()
 
