@@ -73,10 +73,10 @@ def resize_top(window: sg.Window, y):
 
 
 def find_text(text_widget: tk.Text, find, match_case, whole_word, find_all=False):
+    text_widget.tag_remove("find", "1.0", tk.END)
     start_pos = "1.0"
     if not match_case:
         find = find.lower()
-    text_widget.tag_config("search", background="orange", foreground="white")
     while True:
         print("looping")
         start_pos = text_widget.search(
@@ -96,7 +96,7 @@ def find_text(text_widget: tk.Text, find, match_case, whole_word, find_all=False
                 start_pos = end_pos
                 continue
         print("looping4")
-        text_widget.tag_add("search", start_pos, end_pos)
+        text_widget.tag_add("find", start_pos, end_pos)
 
         text_widget.mark_set(tk.INSERT, end_pos)
         text_widget.see(tk.INSERT)
@@ -114,6 +114,7 @@ def find_and_replace(window, v):
         [sg.Checkbox("Whole word", key="-WHOLE_WORD-")],
         [
             sg.Button("Find"),
+            sg.Button("Find all"),
             sg.Button("Replace"),
             sg.Button("Replace All"),
             sg.Button("Close"),
@@ -136,31 +137,31 @@ def find_and_replace(window, v):
         whole_word = values["-WHOLE_WORD-"]
 
         if event == "Find":
-            text_widget.tag_remove("search", "1.0", tk.END)
             find_text(text_widget, find, match_case, whole_word)
+
+        if event == "Find all":
+            find_text(text_widget, find, match_case, whole_word, find_all=True)
 
         elif event == "Replace":
-            if text_widget.tag_ranges("sel"):
-                text_widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
-                text_widget.insert(tk.INSERT, replace_text)
             find_text(text_widget, find, match_case, whole_word)
+            t = text_widget.tag_ranges("find")
+            if t:
+                text_widget.delete(t[0], t[1])
+                text_widget.insert(tk.INSERT, replace_text)
 
         elif event == "Replace All":
-            text_widget.tag_remove("search", "1.0", tk.END)
-            count = replace_all(text_widget, find, replace_text, match_case, whole_word)
-            sg.popup(f"Replaced {count} occurrences.")
+            print(text_widget.tag_ranges("find"))
+            t = text_widget.tag_ranges("find")
+            if t:
+                for start, end in zip(
+                    t[::2],
+                    t[1::2],
+                ):
 
+                    text_widget.delete(start, end)
+                    text_widget.insert(tk.INSERT, replace_text)
+                sg.popup("Replaced " + str(len(t) // 2) + " occurrences")
     search_window.close()
-
-
-def replace_all(text_widget, find, replace_text, match_case, whole_word):
-    text_widget.mark_set(tk.INSERT, "1.0")
-    count = 0
-    while find_text(text_widget, find, match_case, whole_word):
-        text_widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
-        text_widget.insert(tk.INSERT, replace_text)
-        count += 1
-    return count
 
 
 def recurse_folder(folder, tree_data=sg.TreeData()):
