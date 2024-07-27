@@ -107,11 +107,10 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
 def main():
     filename = None
     settings = load_settings()
+    print(settings)
     Tab_dict = {"current_tab": 0}
-    print(settings["custom_theme"])
     sg.LOOK_AND_FEEL_TABLE[settings["theme"]] = settings["custom_theme"]
     sg.theme(settings["theme"])
-
     sg.set_options(font=(FONT, 11))
     save_folder = None
     find_case = False
@@ -146,7 +145,7 @@ def main():
                             "Customize theme",
                         ],
                     ],
-                    ["Edit", ["Find"]],
+                    ["Edit", ["Find", "Find and Replace"]],
                     [
                         "Run",
                         [
@@ -367,15 +366,15 @@ def main():
                 )
                 window["text"].TKText.see("1.0")
 
-            case "Preview built-in themes":
-                sg.theme_previewer(scrollable=True, columns=6)
-
             case "Find":
                 window["find_input"].update(visible=True)
                 window["case"].update(visible=True)
                 window["close_find"].update(visible=True)
                 window["counter"].update(visible=True)
                 window["find_input"].set_focus()
+
+            case "Find and Replace":
+
 
             case "case":
                 find_case = not find_case
@@ -385,6 +384,7 @@ def main():
                 else:
                     search = values["find_input"].lower()
                 if search != "":
+
                     count, first = do_highlighting(window, text, search, find_case)
                 else:
                     count, first = do_highlighting(window, text)
@@ -547,9 +547,12 @@ def main():
                 theme_selector(window)
             case "Customize theme":
                 create_theme_customizer(window)
+                settings["custom_theme"] = sg.LOOK_AND_FEEL_TABLE[sg.theme()]
+            case "Preview built-in themes":
+                sg.theme_previewer(scrollable=True, columns=6)
             case "Exit editor":
                 break
-    print(save_folder)
+    print(settings)
     save_settings(
         [tab for tab in Tab_dict.values() if isinstance(tab, str)],
         settings,

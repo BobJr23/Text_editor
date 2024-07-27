@@ -40,9 +40,10 @@ def get_color_from_sliders(values, key_prefix):
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
-def update_theme(window: sg.Window, selected_theme=sg.theme()):
+def update_theme(window: sg.Window, selected_theme=None):
     if selected_theme is None:
         return
+
     current_them = sg.LOOK_AND_FEEL_TABLE[selected_theme]
 
     try:
@@ -50,6 +51,7 @@ def update_theme(window: sg.Window, selected_theme=sg.theme()):
         window.TKroot.config(background=window_bkg)
     except Exception as e:
         print(e)
+        print("Error updating window background")
 
     for v, element in window.AllKeysDict.items():
         try:
@@ -141,6 +143,7 @@ def create_theme_customizer(w):
         *create_color_sliders("TEXT", "Text Color"),
         *create_color_sliders("INPUT", "Input Background Color"),
         *create_color_sliders("INPUT_TEXT", "Input Text Color"),
+        *create_color_sliders("SCROLL", "Scrollbar Color"),
         *create_color_sliders("BUTTON", "Button Color"),
         *create_color_sliders("BUTTON_TEXT", "Button Text Color"),
         *create_color_sliders("CURSOR", "Cursor Color"),
@@ -171,7 +174,7 @@ def create_theme_customizer(w):
         "CURSOR": "TEXT",  # Default to text color
         "HIGHLIGHT": "BUTTON",  # Default to button background
     }
-    print(current_theme)
+    # print(current_theme)
     current_theme["BACKGROUND"] = sg.theme_background_color()
     current_theme["TEXT"] = sg.theme_text_color()
     current_theme["BUTTON"] = sg.theme_button_color()
@@ -199,6 +202,7 @@ def create_theme_customizer(w):
                 "TEXT": get_color_from_sliders(values, "TEXT"),
                 "INPUT": get_color_from_sliders(values, "INPUT"),
                 "TEXT_INPUT": get_color_from_sliders(values, "INPUT_TEXT"),
+                "SCROLL": get_color_from_sliders(values, "SCROLL"),
                 "BUTTON": (
                     get_color_from_sliders(values, "BUTTON_TEXT"),
                     get_color_from_sliders(values, "BUTTON"),
@@ -208,8 +212,9 @@ def create_theme_customizer(w):
                 "SLIDER_DEPTH": 0,
                 "PROGRESS_DEPTH": 0,
             }
-            print(new_theme)
+
             sg.LOOK_AND_FEEL_TABLE[sg.theme()] = new_theme
+            update_theme(w, sg.theme())
             sg.popup("Theme applied successfully!")
 
         bg_color = get_color_from_sliders(values, "BG")
@@ -237,7 +242,7 @@ def create_theme_customizer(w):
             button_color=(button_text_color, button_color)
         )
         window.TKroot.config(background=bg_color)
-    update_theme(window)
+
     window.close()
 
     return current_theme, cursor_color, highlight_color
