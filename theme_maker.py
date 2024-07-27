@@ -171,8 +171,15 @@ def create_theme_customizer():
         "CURSOR": "TEXT",  # Default to text color
         "HIGHLIGHT": "BUTTON",  # Default to button background
     }
+    print(current_theme)
+    current_theme["BACKGROUND"] = sg.theme_background_color()
+    current_theme["TEXT"] = sg.theme_text_color()
+    current_theme["BUTTON"] = (sg.theme_button_color(), sg.theme_button_color_text())
+    current_theme["INPUT"] = sg.theme_input_background_color()
+    current_theme["TEXT_INPUT"] = sg.theme_input_text_color()
 
     for key, theme_key in color_mappings.items():
+
         if isinstance(theme_key, tuple):
             color = hex_to_rgb(current_theme[theme_key[0]][theme_key[1]])
         else:
@@ -202,27 +209,35 @@ def create_theme_customizer():
             sg.popup("Theme applied successfully!")
 
         bg_color = get_color_from_sliders(values, "BG")
+        text_color = get_color_from_sliders(values, "TEXT")
         input_bg_color = get_color_from_sliders(values, "INPUT")
         input_text_color = get_color_from_sliders(values, "INPUT_TEXT")
+        button_color = get_color_from_sliders(values, "BUTTON")
+        button_text_color = get_color_from_sliders(values, "BUTTON_TEXT")
+        cursor_color = get_color_from_sliders(values, "CURSOR")
+        highlight_color = get_color_from_sliders(values, "HIGHLIGHT")
 
         window["-PREVIEW-"].update(
             background_color=input_bg_color, text_color=input_text_color
         )
-
+        window["-PREVIEW-"].Widget.config(
+            insertbackground=cursor_color, selectbackground=highlight_color
+        )
         window["-PREVIEW_INPUT-"].update(
             background_color=input_bg_color, text_color=input_text_color
         )
-
+        window["-PREVIEW_INPUT-"].Widget.config(
+            insertbackground=cursor_color, selectbackground=highlight_color
+        )
+        window["-PREVIEW_BUTTON-"].update(
+            button_color=(button_text_color, button_color)
+        )
         window.TKroot.config(background=bg_color)
+
     window.close()
-    return window
+    return current_theme, cursor_color, highlight_color
 
 
 if __name__ == "__main__":
-    # theme_selector(sg.Window("Theme Selector", layout=[]).Finalize())
+    sg.theme("DarkBlue2")
     create_theme_customizer()
-    print(sg.theme_background_color())
-    print(sg.theme_text_color())
-    print(sg.theme_button_color())
-    print(sg.theme_input_background_color())
-    # theme_selector()

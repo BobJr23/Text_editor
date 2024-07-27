@@ -39,6 +39,7 @@ def save_settings(open_files, settings, folder):
             json.dumps(
                 {
                     "theme": sg.theme(),
+                    "custom_theme": settings["custom_theme"],
                     "open_files": open_files,
                     "interpreter": settings["interpreter"],
                     "save_folder": folder,
@@ -80,7 +81,6 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
         icon="folder.png",
     )
     for file in os.listdir(folder):
-        print(folder + "/" + file)
         if os.path.isfile(folder + "/" + file):
             tree_data.insert(folder, file, file, [])
     for root, _, files in os.walk(folder):
@@ -108,8 +108,9 @@ def main():
     filename = None
     settings = load_settings()
     Tab_dict = {"current_tab": 0}
+    sg.LOOK_AND_FEEL_TABLE[settings["theme"]] = settings["custom_theme"]
     sg.theme(settings["theme"])
-    sg.theme_input_background_color("#282c34")
+
     sg.set_options(font=(FONT, 11))
     save_folder = None
     find_case = False
@@ -136,7 +137,14 @@ def main():
                             "Exit editor",
                         ],
                     ],
-                    ["Theme", ["Preview themes", "Choose theme"]],
+                    [
+                        "Theme",
+                        [
+                            "Preview built-in themes",
+                            "Choose built-in theme",
+                            "Customize theme",
+                        ],
+                    ],
                     ["Edit", ["Find"]],
                     [
                         "Run",
@@ -286,7 +294,7 @@ def main():
 
     while True:
         event, values = window.read()
-        print(event, values)
+        # print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -358,7 +366,7 @@ def main():
                 )
                 window["text"].TKText.see("1.0")
 
-            case "Preview themes":
+            case "Preview built-in themes":
                 sg.theme_previewer(scrollable=True, columns=6)
 
             case "Find":
@@ -409,7 +417,6 @@ def main():
 
                 old = window["text"].get_size()[1] // 21
 
-                # break
                 if window["resize"].user_bind_event.y > 30:
                     resize_top(window, old + 5)
 
@@ -535,9 +542,10 @@ def main():
                         daemon=True,
                     ).start()
 
-            case "Choose theme":
+            case "Choose built-in theme":
+                theme_selector(window)
+            case "Customize theme":
                 create_theme_customizer()
-                # theme_selector(window)
             case "Exit editor":
                 break
     print(save_folder)
