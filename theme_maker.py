@@ -9,6 +9,23 @@ def hex_to_rgb(hex_color):
     return tuple(int(hex_color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
 
 
+def create_color_sliders(key_prefix, text):
+    return [
+        [sg.Text(text)],
+        [
+            sg.Slider(
+                range=(0, 255), orientation="h", size=(20, 15), key=f"-{key_prefix}_R-"
+            ),
+            sg.Slider(
+                range=(0, 255), orientation="h", size=(20, 15), key=f"-{key_prefix}_G-"
+            ),
+            sg.Slider(
+                range=(0, 255), orientation="h", size=(20, 15), key=f"-{key_prefix}_B-"
+            ),
+        ],
+    ]
+
+
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
 def update_theme(window: sg.Window, selected_theme):
     if selected_theme is None:
@@ -44,36 +61,39 @@ def theme_selector(window):
     theme = None
     window2 = sg.Window(
         "Choose a theme",
-        [
+        layout=[
+            *create_color_sliders("BG", "Background Color"),
+            *create_color_sliders("TEXT", "Text Color"),
+            *create_color_sliders("INPUT", "Input Background Color"),
+            *create_color_sliders("INPUT_TEXT", "Input Text Color"),
+            *create_color_sliders("BUTTON", "Button Color"),
+            *create_color_sliders("BUTTON_TEXT", "Button Text Color"),
+            *create_color_sliders("CURSOR", "Cursor Color"),
+            *create_color_sliders("HIGHLIGHT", "Highlight Color"),
+            [sg.Text("Preview")],
             [
-                sg.Input(
-                    focus=True,
-                    tooltip="Search for a theme",
-                    key="theme-input",
-                    enable_events=True,
-                    size=(20, 1),
+                sg.Multiline(
+                    "This is a preview of the custom theme.\nYou can see how it looks here.",
+                    size=(50, 5),
+                    key="-PREVIEW-",
                 )
             ],
-            [
-                sg.Listbox(
-                    values=sg.theme_list(),
-                    key="theme",
-                    size=(20, 20),
-                    expand_y=True,
-                    enable_events=True,
-                ),
-                sg.Text("Example Text", size=(20, 1)),
-                sg.Button("Example Button, size=(20, 1)"),
-                sg.Input(default_text="Example Input", size=(20, 1)),
-                sg.Multiline("Example Multiline", size=(20, 20)),
-            ],
-            [sg.Button("Submit")],
+            [sg.Input("Input field preview", key="-PREVIEW_INPUT-")],
+            [sg.Button("Preview Button", key="-PREVIEW_BUTTON-")],
+            [sg.Button("Apply"), sg.Button("Cancel")],
         ],
-        resizable=True,
-        finalize=True,
     )
     window2.maximize()
-
+    color_mappings = {
+        "BG": "BACKGROUND",
+        "TEXT": "TEXT",
+        "INPUT": "INPUT",
+        "INPUT_TEXT": "TEXT_INPUT",
+        "BUTTON": ("BUTTON", 1),  # Button background
+        "BUTTON_TEXT": ("BUTTON", 0),  # Button text
+        "CURSOR": "TEXT",  # Default to text color
+        "HIGHLIGHT": "BUTTON",  # Default to button background
+    }
     while True:
         event2, values2 = window2.read()
 
