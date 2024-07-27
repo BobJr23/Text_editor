@@ -5,8 +5,13 @@ def rgb_to_hex(r, g, b):
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 
-def hex_to_rgb(hex_color):
-    return tuple(int(hex_color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+def hex_to_rgb(color):
+    if isinstance(color, tuple):
+        return color if len(color) == 3 else (color[0], color[0], color[0])
+    elif isinstance(color, str):
+        return tuple(int(color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+    else:
+        return (color, color, color)
 
 
 def create_color_sliders(key_prefix, text):
@@ -24,6 +29,14 @@ def create_color_sliders(key_prefix, text):
             ),
         ],
     ]
+
+
+def get_color_from_sliders(values, key_prefix):
+    return rgb_to_hex(
+        int(values[f"-{key_prefix}_R-"]),
+        int(values[f"-{key_prefix}_G-"]),
+        int(values[f"-{key_prefix}_B-"]),
+    )
 
 
 # modified https://github.com/PySimpleGUI/PySimpleGUI/issues/2437
@@ -61,39 +74,36 @@ def theme_selector(window):
     theme = None
     window2 = sg.Window(
         "Choose a theme",
-        layout=[
-            *create_color_sliders("BG", "Background Color"),
-            *create_color_sliders("TEXT", "Text Color"),
-            *create_color_sliders("INPUT", "Input Background Color"),
-            *create_color_sliders("INPUT_TEXT", "Input Text Color"),
-            *create_color_sliders("BUTTON", "Button Color"),
-            *create_color_sliders("BUTTON_TEXT", "Button Text Color"),
-            *create_color_sliders("CURSOR", "Cursor Color"),
-            *create_color_sliders("HIGHLIGHT", "Highlight Color"),
-            [sg.Text("Preview")],
+        [
             [
-                sg.Multiline(
-                    "This is a preview of the custom theme.\nYou can see how it looks here.",
-                    size=(50, 5),
-                    key="-PREVIEW-",
+                sg.Input(
+                    focus=True,
+                    tooltip="Search for a theme",
+                    key="theme-input",
+                    enable_events=True,
+                    size=(20, 1),
                 )
             ],
-            [sg.Input("Input field preview", key="-PREVIEW_INPUT-")],
-            [sg.Button("Preview Button", key="-PREVIEW_BUTTON-")],
-            [sg.Button("Apply"), sg.Button("Cancel")],
+            [
+                sg.Listbox(
+                    values=sg.theme_list(),
+                    key="theme",
+                    size=(20, 20),
+                    expand_y=True,
+                    enable_events=True,
+                ),
+                sg.Text("Example Text", size=(20, 1)),
+                sg.Button("Example Button, size=(20, 1)"),
+                sg.Input(default_text="Example Input", size=(20, 1)),
+                sg.Multiline("Example Multiline", size=(20, 20)),
+            ],
+            [sg.Button("Submit")],
         ],
+        resizable=True,
+        finalize=True,
     )
     window2.maximize()
-    color_mappings = {
-        "BG": "BACKGROUND",
-        "TEXT": "TEXT",
-        "INPUT": "INPUT",
-        "INPUT_TEXT": "TEXT_INPUT",
-        "BUTTON": ("BUTTON", 1),  # Button background
-        "BUTTON_TEXT": ("BUTTON", 0),  # Button text
-        "CURSOR": "TEXT",  # Default to text color
-        "HIGHLIGHT": "BUTTON",  # Default to button background
-    }
+
     while True:
         event2, values2 = window2.read()
 
@@ -124,26 +134,17 @@ def create_theme_customizer():
     layout = [
         [
             sg.Text(
-                "Background Color\n               RED                                        GREEN                                         BLUE"
+                "              RED                                         GREEN                                        BLUE"
             )
         ],
-        [
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-BG_R-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-BG_G-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-BG_B-"),
-        ],
-        [sg.Text("Text Color")],
-        [
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-TEXT_R-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-TEXT_G-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-TEXT_B-"),
-        ],
-        [sg.Text("Highlight Color")],
-        [
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-HL_R-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-HL_G-"),
-            sg.Slider(range=(0, 255), orientation="h", size=(20, 15), key="-HL_B-"),
-        ],
+        *create_color_sliders("BG", "Background Color"),
+        *create_color_sliders("TEXT", "Text Color"),
+        *create_color_sliders("INPUT", "Input Background Color"),
+        *create_color_sliders("INPUT_TEXT", "Input Text Color"),
+        *create_color_sliders("BUTTON", "Button Color"),
+        *create_color_sliders("BUTTON_TEXT", "Button Text Color"),
+        *create_color_sliders("CURSOR", "Cursor Color"),
+        *create_color_sliders("HIGHLIGHT", "Highlight Color"),
         [sg.Text("Preview")],
         [
             sg.Multiline(
@@ -152,24 +153,33 @@ def create_theme_customizer():
                 key="-PREVIEW-",
             )
         ],
+        [sg.Input("Input field preview", key="-PREVIEW_INPUT-")],
+        [sg.Button("Preview Button", key="-PREVIEW_BUTTON-")],
         [sg.Button("Apply"), sg.Button("Cancel")],
     ]
 
     window = sg.Window("Theme Customizer", layout, finalize=True)
-    bg_color = hex_to_rgb(current_theme["BACKGROUND"])
-    text_color = hex_to_rgb(current_theme["TEXT"])
-    highlight_color = hex_to_rgb(current_theme["BUTTON"][1])
-    window["-BG_R-"].update(bg_color[0])
-    window["-BG_G-"].update(bg_color[1])
-    window["-BG_B-"].update(bg_color[2])
 
-    window["-TEXT_R-"].update(text_color[0])
-    window["-TEXT_G-"].update(text_color[1])
-    window["-TEXT_B-"].update(text_color[2])
+    # Set initial slider values based on current theme
+    color_mappings = {
+        "BG": "BACKGROUND",
+        "TEXT": "TEXT",
+        "INPUT": "INPUT",
+        "INPUT_TEXT": "TEXT_INPUT",
+        "BUTTON": ("BUTTON", 1),  # Button background
+        "BUTTON_TEXT": ("BUTTON", 0),  # Button text
+        "CURSOR": "TEXT",  # Default to text color
+        "HIGHLIGHT": "BUTTON",  # Default to button background
+    }
 
-    window["-HL_R-"].update(highlight_color[0])
-    window["-HL_G-"].update(highlight_color[1])
-    window["-HL_B-"].update(highlight_color[2])
+    for key, theme_key in color_mappings.items():
+        if isinstance(theme_key, tuple):
+            color = hex_to_rgb(current_theme[theme_key[0]][theme_key[1]])
+        else:
+            color = hex_to_rgb(current_theme.get(theme_key, "#000000"))
+        window[f"-{key}_R-"].update(color[0])
+        window[f"-{key}_G-"].update(color[1])
+        window[f"-{key}_B-"].update(color[2])
     while True:
         event, values = window.read(timeout=100)
 
@@ -178,50 +188,38 @@ def create_theme_customizer():
 
         if event == "Apply":
             new_theme = {
-                "BACKGROUND": rgb_to_hex(
-                    int(values["-BG_R-"]), int(values["-BG_G-"]), int(values["-BG_B-"])
-                ),
-                "TEXT": rgb_to_hex(
-                    int(values["-TEXT_R-"]),
-                    int(values["-TEXT_G-"]),
-                    int(values["-TEXT_B-"]),
-                ),
+                "BACKGROUND": get_color_from_sliders(values, "BG"),
+                "TEXT": get_color_from_sliders(values, "TEXT"),
+                "INPUT": get_color_from_sliders(values, "INPUT"),
+                "TEXT_INPUT": get_color_from_sliders(values, "INPUT_TEXT"),
                 "BUTTON": (
-                    rgb_to_hex(
-                        int(values["-TEXT_R-"]),
-                        int(values["-TEXT_G-"]),
-                        int(values["-TEXT_B-"]),
-                    ),
-                    rgb_to_hex(
-                        int(values["-HL_R-"]),
-                        int(values["-HL_G-"]),
-                        int(values["-HL_B-"]),
-                    ),
+                    get_color_from_sliders(values, "BUTTON_TEXT"),
+                    get_color_from_sliders(values, "BUTTON"),
                 ),
             }
             sg.LOOK_AND_FEEL_TABLE["CustomTheme"] = new_theme
             sg.theme("CustomTheme")
             sg.popup("Theme applied successfully!")
 
-        bg_color = rgb_to_hex(
-            int(values["-BG_R-"]), int(values["-BG_G-"]), int(values["-BG_B-"])
-        )
-        text_color = rgb_to_hex(
-            int(values["-TEXT_R-"]), int(values["-TEXT_G-"]), int(values["-TEXT_B-"])
-        )
-        highlight_color = rgb_to_hex(
-            int(values["-HL_R-"]), int(values["-HL_G-"]), int(values["-HL_B-"])
-        )
+        bg_color = get_color_from_sliders(values, "BG")
+        input_bg_color = get_color_from_sliders(values, "INPUT")
+        input_text_color = get_color_from_sliders(values, "INPUT_TEXT")
 
         window["-PREVIEW-"].update(
-            background_color=bg_color,
-            text_color=text_color,
+            background_color=input_bg_color, text_color=input_text_color
         )
+
+        window["-PREVIEW_INPUT-"].update(
+            background_color=input_bg_color, text_color=input_text_color
+        )
+
+        window.TKroot.config(background=bg_color)
     window.close()
     return window
 
 
 if __name__ == "__main__":
+    # theme_selector(sg.Window("Theme Selector", layout=[]).Finalize())
     create_theme_customizer()
     print(sg.theme_background_color())
     print(sg.theme_text_color())
