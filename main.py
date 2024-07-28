@@ -8,12 +8,14 @@ from theme_maker import theme_selector, sg, create_theme_customizer
 from google_ai import send_message_to_ai
 
 
-def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, update=True):
+def load_from_file(
+    filename, window: sg.Window, tab_dict, add_to_tab=True, update=True, values=None
+):
     if update:
         with open(filename) as f:
             text = f.read()
 
-            do_highlighting(window, text)
+            do_highlighting(window, text, values=values)
 
             f.close()
         update_lines(window, text)
@@ -419,7 +421,9 @@ def main():
     window["text"].Widget.tag_config("find", background="orange", foreground="white")
     try:
         for x in settings["open_files"]:
-            Tab_dict = load_from_file(x, window, Tab_dict, update=False)
+            Tab_dict = load_from_file(
+                x, window, Tab_dict, update=False, values={"TabGroup": x}
+            )
 
     except KeyError:
         pass
@@ -434,7 +438,7 @@ def main():
             case "Open" | "Open_bind":
                 filename = sg.popup_get_file("Select a file", no_window=True)
                 if filename is not None:
-                    Tab_dict = load_from_file(filename, window, Tab_dict)
+                    Tab_dict = load_from_file(filename, window, Tab_dict, values=values)
 
             case "Open folder":
                 folder = sg.popup_get_folder("Select a folder", no_window=True)
@@ -450,7 +454,7 @@ def main():
                 with open(filename, "w") as f:
                     f.write(values["text"])
                     f.close()
-                do_highlighting(window, values["text"])
+                do_highlighting(window, values["text"], values=values)
             case "Save As":
                 with open(filename, "w") as f:
                     f.write(values["text"])
@@ -485,6 +489,7 @@ def main():
                         tab_dict=Tab_dict,
                         add_to_tab=True,
                         update=True,
+                        values=values,
                     )
 
             case "TabGroup":
@@ -494,7 +499,11 @@ def main():
                     print("index error")
                     continue
                 Tab_dict = load_from_file(
-                    Tab_dict[values["TabGroup"]], window, Tab_dict, add_to_tab=False
+                    Tab_dict[values["TabGroup"]],
+                    window,
+                    Tab_dict,
+                    add_to_tab=False,
+                    values=values,
                 )
                 window["text"].TKText.see("1.0")
 
@@ -518,9 +527,11 @@ def main():
                     search = values["find_input"].lower()
                 if search != "":
 
-                    count, first = do_highlighting(window, text, search, find_case)
+                    count, first = do_highlighting(
+                        window, text, search, find_case, values=values
+                    )
                 else:
-                    count, first = do_highlighting(window, text)
+                    count, first = do_highlighting(window, text, values=values)
                 if count == 0:
                     window["counter"].update("0/0")
                 else:
@@ -558,7 +569,9 @@ def main():
 
             case "text_text":
                 cursor_pos = window["text"].Widget.index("insert")
-                do_highlighting(window, values["text"], values["find_input"])
+                do_highlighting(
+                    window, values["text"], values["find_input"], values=values
+                )
                 window["text"].set_focus()
                 window["text"].Widget.mark_set("insert", cursor_pos)
                 update_lines(window, values["text"])
@@ -600,9 +613,11 @@ def main():
                 else:
                     search = values["find_input"].lower()
                 if search != "":
-                    count, first = do_highlighting(window, text, search, find_case)
+                    count, first = do_highlighting(
+                        window, text, search, find_case, values=values
+                    )
                 else:
-                    count, first = do_highlighting(window, text)
+                    count, first = do_highlighting(window, text, values=values)
                 if count == 0:
                     window["counter"].update("0/0")
                 else:
@@ -636,7 +651,7 @@ def main():
                 window["replace"].update(visible=False)
                 window["close_find"].update(visible=False)
                 window["case"].update(visible=False)
-                do_highlighting(window, values["text"])
+                do_highlighting(window, values["text"], values=values)
 
             case "Open AI Chat" | "Open AI Chat_b":
 
@@ -714,7 +729,12 @@ def main():
                     "Select a location to save to", no_window=True, save_as=True
                 )
                 Tab_dict = load_from_file(
-                    filename, window, Tab_dict, add_to_tab=True, update=False
+                    filename,
+                    window,
+                    Tab_dict,
+                    add_to_tab=True,
+                    update=False,
+                    values=values,
                 )
                 with open(filename, "w") as f:
                     f.write("")
