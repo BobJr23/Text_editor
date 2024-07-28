@@ -528,13 +528,30 @@ def main():
                     window["text"].TKText.see(first)
 
             case "Update keybinds":
-                layout = [[sg.Text("This is a new window")], [sg.Button("Close")]]
+
+                layout = [
+                    [sg.Text("This is a new window")],
+                    [
+                        sg.Column(
+                            [
+                                [sg.Text(y), sg.Input(default_text=x, key=y)]
+                                for x, y in keybinds.items()
+                            ]
+                        ),
+                    ],
+                    [sg.Button("Save"), sg.Button("Cancel")],
+                ]
 
                 window = sg.Window("Update binds", layout)
 
                 while True:
-                    event, values = window.read()
-                    if event == sg.WINDOW_CLOSED or event == "Close":
+                    e, v = window.read()
+                    print(v)
+                    if e == sg.WINDOW_CLOSED or e == "Cancel":
+                        break
+                    elif e == "Save":
+                        for x, y in keybinds.items():
+                            keybinds[x] = v[x]
                         break
 
                 window.close()
