@@ -82,24 +82,24 @@ def find_text(text_widget: tk.Text, find, match_case, whole_word, find_all=False
     if not match_case:
         find = find.lower()
     while True:
-        print("looping")
+
         start_pos = text_widget.search(
             find, start_pos, tk.END, nocase=not match_case, regexp=whole_word
         )
-        print(start_pos)
+
         if not start_pos:
             break
         end_pos = f"{start_pos}+{len(find)}c"
-        print("looping2")
+
         if whole_word:
-            print("looping3")
+
             if not (
                 text_widget.get(f"{start_pos}-1c").isspace()
                 and text_widget.get(end_pos).isspace()
             ):
                 start_pos = end_pos
                 continue
-        print("looping4")
+
         text_widget.tag_add("find", start_pos, end_pos)
 
         text_widget.mark_set(tk.INSERT, end_pos)
@@ -154,7 +154,7 @@ def find_and_replace(window, v):
                 text_widget.insert(tk.INSERT, replace_text)
 
         elif event == "Replace All":
-            print(text_widget.tag_ranges("find"))
+
             t = text_widget.tag_ranges("find")
             if t:
                 for start, end in zip(
@@ -203,7 +203,7 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
 def main():
     filename = None
     settings = load_settings()
-    print(settings)
+
     Tab_dict = {"current_tab": 0}
     sg.LOOK_AND_FEEL_TABLE[settings["theme"]] = settings["custom_theme"]
     sg.theme(settings["theme"])
@@ -430,7 +430,7 @@ def main():
 
     while True:
         event, values = window.read()
-        print(event, values)
+        # print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -450,7 +450,7 @@ def main():
 
                     save_folder = folder
             case "Save" | "Save_bind":
-                print("saving" + filename)
+
                 with open(filename, "w") as f:
                     f.write(values["text"])
                     f.close()
@@ -471,6 +471,11 @@ def main():
             case "Close file" | "Close_bind":
                 current_tab = Tab_dict["current_tab"]
                 if current_tab:
+                    if sg.popup_yes_no("Save file before closing?") == "Yes":
+                        with open(values["path"][:-1] + values["TabGroup"], "w") as f:
+                            f.write(values["text"])
+                            f.close()
+
                     window["TabGroup"].Widget.forget(current_tab)
                     Tab_dict.pop(list(Tab_dict.keys())[current_tab + 1])
 
@@ -557,7 +562,7 @@ def main():
 
                 while True:
                     e, v = window.read()
-                    print(v)
+
                     if e == sg.WINDOW_CLOSED or e == "Cancel":
                         break
                     elif e == "Save":
@@ -660,7 +665,7 @@ def main():
                 window["text"].set_size((MULTILINE_WIDTH - 90, 20))
 
             case "copilot_input_enter":
-                print("inputted")
+
                 user_message = values["copilot_input"]
                 if not values["include_file"]:
                     file = False
@@ -724,21 +729,22 @@ def main():
                 os.system(f"start cmd /k")
 
             case "New" | "New_bind":
-                window["text"].update("")
                 filename = sg.popup_get_file(
                     "Select a location to save to", no_window=True, save_as=True
                 )
-                Tab_dict = load_from_file(
-                    filename,
-                    window,
-                    Tab_dict,
-                    add_to_tab=True,
-                    update=False,
-                    values=values,
-                )
-                with open(filename, "w") as f:
-                    f.write("")
-                    f.close()
+                if filename:
+                    window["text"].update("")
+                    Tab_dict = load_from_file(
+                        filename,
+                        window,
+                        Tab_dict,
+                        add_to_tab=True,
+                        update=False,
+                        values=values,
+                    )
+                    with open(filename, "w") as f:
+                        f.write("")
+                        f.close()
 
             case "terminal_input_run":
 
@@ -772,7 +778,7 @@ def main():
                 sg.theme_previewer(scrollable=True, columns=6)
             case "Exit editor":
                 break
-    print(settings)
+
     save_settings(
         [tab for tab in Tab_dict.values() if isinstance(tab, str)],
         settings,
