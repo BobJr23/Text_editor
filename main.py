@@ -317,7 +317,7 @@ def main():
                 rstrip=False,
                 selected_background_color="#404859",
             ),
-            sg.Button("Copilot Chat", key="Open AI Chat_b"),
+            sg.Button("Copilot\nChat", key="Open AI Chat_b"),
             sg.Column(
                 [
                     [
@@ -328,10 +328,11 @@ def main():
                             pad=(0, 0),
                             rstrip=False,
                             disabled=True,
+                            reroute_cprint=True,
                         ),
                     ],
                     [
-                        sg.Input(key="copilot_input", size=(80, 3), pad=(0, 0)),
+                        sg.Input(key="copilot_input", size=(64, 3), pad=(0, 0)),
                         sg.Checkbox("Include File", key="include_file"),
                         sg.Button("Close Chat", key="close_chat"),
                     ],
@@ -398,6 +399,7 @@ def main():
     window["resize"].bind("<B1-Motion>", "_")
     window["resize"].bind("<Button-3>", "_rightclick")
     window["resize"].bind("<Double-Button-1>", "_double")
+    window["copilot_input"].bind("<Return>", "_enter")
     window["text"].Widget.tag_config(
         "normal", foreground=styles["normal"]["text_color"]
     )
@@ -417,7 +419,7 @@ def main():
 
     while True:
         event, values = window.read()
-        # print(event, values)
+        print(event, values)
         match event:
             case sg.WIN_CLOSED:
                 break
@@ -605,19 +607,26 @@ def main():
                 window["Open AI Chat_b"].update(visible=False)
                 window["text"].set_size((MULTILINE_WIDTH - 90, 20))
 
-            case "copilot_input":
+            case "copilot_input_enter":
+                print("inputted")
                 user_message = values["copilot_input"]
                 if not values["include_file"]:
                     file = False
                 else:
-                    file = os.path.join(values["path"], values["TabGroup"])
+                    file = os.path.join(values["path"][:-1], values["TabGroup"])
                 if user_message:
-                    window["copilot"].update(f"You: {user_message}\n", append=True)
+                    sg.cprint(f"You: {user_message}\n\nCopilot:\n")
+                    # window["copilot"].update(
+                    #     f"You: {user_message}\n\nCopilot:\n", append=True
+                    # )
                     window["copilot_input"].update("")
                     response = send_message_to_ai(user_message, file)
                     for chunk in response:
-                        window["copilot"].update(chunk.text, append=True)
-                        window.refresh()
+                        # window["copilot"].update(
+                        #     chunk.text, append=True, background_color="lightgray"
+                        # )
+                        # window.refresh()
+                        sg.cprint(chunk.text, colors="black on lightgray")
                     window["copilot"].update(
                         "\n---------------Completed response---------------\n",
                         append=True,
