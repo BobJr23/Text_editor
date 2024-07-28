@@ -5,6 +5,7 @@ import os
 from run_file import run
 import threading
 from theme_maker import theme_selector, sg, create_theme_customizer
+from google_ai import send_message_to_ai
 
 
 def load_from_file(filename, window: sg.Window, tab_dict, add_to_tab=True, update=True):
@@ -67,9 +68,10 @@ def drag_scroll(window):
 
 
 def resize_top(window: sg.Window, y):
-    window["text"].set_size((MULTILINE_WIDTH, y))
+    window["text"].set_size((MULTILINE_WIDTH - 90, y))
     window["numbers"].set_size((4, y))
     window["folders"].set_size((1, y))
+    window["copilot"].set_size((90, y - 3))
 
 
 def find_text(text_widget: tk.Text, find, match_case, whole_word, find_all=False):
@@ -248,6 +250,12 @@ def main():
                             "Open Command Prompt",
                         ],
                     ],
+                    [
+                        "AI",
+                        [
+                            "Open AI Chat",
+                        ],
+                    ],
                 ]
             ),
         ],
@@ -308,6 +316,28 @@ def main():
                 pad=(0, 0),
                 rstrip=False,
                 selected_background_color="#404859",
+            ),
+            sg.Button("Copilot Chat", key="Open AI Chat_b"),
+            sg.Column(
+                [
+                    [
+                        sg.Multiline(
+                            key="copilot",
+                            default_text="Copilot Chat\n",
+                            size=(90, 18),
+                            pad=(0, 0),
+                            rstrip=False,
+                            disabled=True,
+                        ),
+                    ],
+                    [
+                        sg.Input(key="copilot_input", size=(80, 3), pad=(0, 0)),
+                        sg.Checkbox("Include File", key="include_file"),
+                        sg.Button("Close Chat", key="close_chat"),
+                    ],
+                ],
+                visible=False,
+                key="copilot_column",
             ),
         ],
         [
@@ -568,6 +598,35 @@ def main():
                 window["close_find"].update(visible=False)
                 window["case"].update(visible=False)
                 do_highlighting(window, values["text"])
+
+            case "Open AI Chat" | "Open AI Chat_b":
+
+                window["copilot_column"].update(visible=True)
+                window["Open AI Chat_b"].update(visible=False)
+                window["text"].set_size((MULTILINE_WIDTH - 90, 20))
+
+            case "copilot_input":
+                user_message = values["copilot_input"]
+                if not values["include_file"]:
+                    file = False
+                else:
+                    file = os.path.join(values["path"], values["TabGroup"])
+                if user_message:
+                    window["copilot"].update(f"You: {user_message}\n", append=True)
+                    window["copilot_input"].update("")
+                    response = send_message_to_ai(user_message, file)
+                    for chunk in response:
+                        window["copilot"].update(chunk.text, append=True)
+                        window.refresh()
+                    window["copilot"].update(
+                        "\n---------------Completed response---------------\n",
+                        append=True,
+                    )
+
+            case "close_chat":
+                window["copilot_column"].update(visible=False)
+                window["Open AI Chat_b"].update(visible=True)
+                window["text"].set_size((MULTILINE_WIDTH, 20))
 
             case "Select interpreter":
                 interpreter = sg.popup_get_file("Select an interpreter", no_window=True)

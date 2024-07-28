@@ -19,9 +19,9 @@ def send_message_to_ai(message, file):
     return result
 
 
-def open_chat_window(file):
+def open_chat_window(window2: sg.Window):
     layout = [
-        [sg.Multiline(size=(200, 50), key="-CHAT-", disabled=True, autoscroll=True)],
+        [sg.Multiline(size=(70, 30), key="-CHAT-", disabled=True, autoscroll=True)],
         [
             sg.Input(key="-INPUT-", size=(40, 1)),
             sg.Button("Send", bind_return_key=True),
@@ -34,13 +34,17 @@ def open_chat_window(file):
     chat_history = ""
 
     while True:
-        event, values = window.read()
+
+        event, values = window.read(timeout=100)
+        _, v2 = window2.read(timeout=500)
         if event == sg.WINDOW_CLOSED:
             break
         elif event == "Send":
             user_message = values["-INPUT-"]
             if not values["-INCLUDE_FILE-"]:
                 file = False
+            else:
+                file = os.path.join(v2["path"], v2["TabGroup"])
             if user_message:
                 window["-CHAT-"].update(f"You: {user_message}\n", append=True)
                 window["-INPUT-"].update("")
@@ -48,7 +52,9 @@ def open_chat_window(file):
                 for chunk in response:
                     window["-CHAT-"].update(chunk.text, append=True)
                     window.refresh()
-                window["-CHAT-"].update("\n___________________\n", append=True)
+                window["-CHAT-"].update(
+                    "\n---------------Completed response---------------\n", append=True
+                )
 
     window.close()
 
