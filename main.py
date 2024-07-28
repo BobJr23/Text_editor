@@ -213,6 +213,15 @@ def main():
         save_folder = settings["save_folder"]
     else:
         tree_data = sg.TreeData()
+    keybinds = {
+        "<Control-s>": "Save_bind",
+        "<Control-o>": "Open_bind",
+        "<Control-w>": "Close_bind",
+        "<Control-f>": "Find",
+        "<Control-t>": "New_bind",
+        "<Control-r>": "Run_file",
+        "<Control-q>": "Exit_editor",
+    }
     layout = [
         [
             sg.Menu(
@@ -239,7 +248,7 @@ def main():
                             "Customize theme",
                         ],
                     ],
-                    ["Edit", ["Find", "Find and Replace"]],
+                    ["Edit", ["Find", "Find and Replace", "Update keybinds"]],
                     [
                         "Run",
                         [
@@ -382,11 +391,9 @@ def main():
 
     window = sg.Window("BobJr editor", layout, resizable=True, finalize=True)
     window.maximize()
-    window.bind("<Control-s>", "Save_bind")
-    window.bind("<Control-o>", "Open_bind")
-    window.bind("<Control-w>", "Close_bind")
-    window.bind("<Control-f>", "Find")
-    window.bind("<Control-t>", "New_bind")
+
+    for key, value in keybinds.items():
+        window.bind(key, value)
     window["find_input"].bind("<Return>", "_occurrence")
     window["find_input"].bind("<Escape>", "_close_find")
     window["terminal_input"].bind("<Return>", "_run")
@@ -519,6 +526,19 @@ def main():
                 else:
                     window["counter"].update("1/" + str(count))
                     window["text"].TKText.see(first)
+
+            case "Update keybinds":
+                layout = [[sg.Text("This is a new window")], [sg.Button("Close")]]
+
+                window = sg.Window("Update binds", layout)
+
+                while True:
+                    event, values = window.read()
+                    if event == sg.WINDOW_CLOSED or event == "Close":
+                        break
+
+                window.close()
+
             case "text_text":
                 cursor_pos = window["text"].Widget.index("insert")
                 do_highlighting(window, values["text"], values["find_input"])
