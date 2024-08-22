@@ -1,5 +1,5 @@
 # From https://github.com/B00TK1D/copilot-api
-# Disregard
+# Not used at the moment
 
 import http.server
 import threading

@@ -1,23 +1,26 @@
 import json
 import re
-from highlighter import do_highlighting, styles, tk
+from helpers.highlighter import do_highlighting, styles, tk
 import os
-from run_file import run
+from helpers.run_file import run
 import threading
-from theme_maker import theme_selector, sg, create_theme_customizer
-from google_ai import send_message_to_ai
+from helpers.theme_maker import theme_selector, sg, create_theme_customizer
+from helpers.google_ai import send_message_to_ai
 
 
 def load_from_file(
     filename, window: sg.Window, tab_dict, add_to_tab=True, update=True, values=None
 ):
     if update:
-        with open(filename) as f:
-            text = f.read()
+        try:
+            with open(filename) as f:
+                text = f.read()
 
-            do_highlighting(window, text, values=values)
+                do_highlighting(window, text, values=values)
 
-            f.close()
+                f.close()
+        except FileNotFoundError:
+            return tab_dict
         update_lines(window, text)
 
     if add_to_tab and filename not in tab_dict.values():
@@ -174,7 +177,7 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
         folder,
         folder.split("/")[-1] + " - " + (folder[-28:] if len(folder) > 27 else folder),
         [],
-        icon="folder.png",
+        icon="images/folder.png",
     )
     for file in os.listdir(folder):
         if os.path.isfile(folder + "/" + file):
@@ -186,7 +189,7 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
                 root,
                 " " + root.split("\\")[-1],
                 [],
-                icon="folder.png",
+                icon="images/folder.png",
             )
             for file in files:
                 tree_data.insert(
@@ -194,7 +197,7 @@ def recurse_folder(folder, tree_data=sg.TreeData()):
                     file,
                     " " + file,
                     [],
-                    icon=("python.png" if file.endswith(".py") else "file.png"),
+                    icon=("images/python.png" if file.endswith(".py") else "images/file.png"),
                 )
 
     return tree_data
