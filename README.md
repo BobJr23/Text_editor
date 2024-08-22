@@ -1,8 +1,32 @@
 # Text_editor
 Python text editor created using PySimpleGUI
 
+# How to use
+
+Clone the project
+
+**If you want to use Copilot Chat**
+
+Create a .env file and create an API_KEY entry with a free API key from Google's Gemini model https://aistudio.google.com/app/apikey
+
+The .env file should look like 
+
+```API_KEY=Put-your-key-here```
+
+**Running program**
+
+```pip install -r requirements.txt```
+
+then
+
+```python main.py```
+
+**Note: You may need to create a free PySimpleGUI account (It will prompt you if necessary)**
 
 # Feature display
+
+**Overview**
+![image](https://cloud-l9ukjc2t5-hack-club-bot.vercel.app/0image.png)
 
 **Theme customizer**
 
