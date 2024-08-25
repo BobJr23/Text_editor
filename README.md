@@ -5,19 +5,13 @@ Python text editor created using PySimpleGUI
 
 **Option 1 (Easy):**
 
-Install the main.exe file and run it
+Install the main.exe file and run it 
+
+For some reason Pyinstaller messed up folder opening so you may want to run the program using python for full functionality
 
 **Option 2 (Less easy):**
 
 Clone the project
-
-**If you want to use Copilot Chat**
-
-Create a .env file and create an API_KEY entry with a free API key from Google's Gemini model https://aistudio.google.com/app/apikey
-
-The .env file should look like 
-
-```API_KEY=Put-your-key-here```
 
 **Running program**
 
@@ -28,6 +22,15 @@ then
 ```python main.py```
 
 **Note: You may need to create a free PySimpleGUI account (It will prompt you if necessary)**
+
+**If you want to use Copilot Chat**
+
+Either create a .env file or put it into the program (it will ask when you try to use Copilot) and create an API_KEY entry with a free API key from Google's Gemini model https://aistudio.google.com/app/apikey
+
+The .env file should look like
+
+```API_KEY=Put-your-key-here```
+
 
 # Feature display
 
