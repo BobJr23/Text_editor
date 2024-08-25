@@ -3,6 +3,12 @@ Python text editor created using PySimpleGUI
 
 # How to use
 
+**Option 1 (Easy):**
+
+Install the main.exe file and run it
+
+**Option 2 (Less easy):**
+
 Clone the project
 
 **If you want to use Copilot Chat**
